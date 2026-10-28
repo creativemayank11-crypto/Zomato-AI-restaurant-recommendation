@@ -1,0 +1,27 @@
+# Core & Data Models
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0
+
+# Data Ingestion & Storage
+datasets>=2.18.0
+pandas>=2.0.0
+pyarrow>=14.0.0
+duckdb>=0.9.0
+numpy>=1.26.0
+
+# LLM Providers & Tooling
+google-genai>=0.1.0
+google-generativeai>=0.5.0
+openai>=1.12.0
+tenacity>=8.2.0
+
+# API & Web Interface
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+streamlit>=1.32.0
+
+# Testing & Quality
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+httpx>=0.27.0

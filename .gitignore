@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+.venv/
+env/
+venv/
+ENV/
+
+# Environment Variables
+.env
+!.env.example
+
+# Large Data Files (Keep processed schemas/samples, ignore massive raw dumps)
+data/raw/*.csv
+data/raw/*.json
+data/processed/*.parquet
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# IDEs & System
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
