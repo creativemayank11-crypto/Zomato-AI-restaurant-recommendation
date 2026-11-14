@@ -1,5 +1,5 @@
 /**
- * Doom AI Concierge — frontend logic.
+ * Sovereign AI Concierge — frontend logic.
  * Talks to the FastAPI backend: /health, /api/v1/meta/options, /api/v1/recommend
  */
 
@@ -472,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
         : 'p-3.5 bg-[#0D131A] border-[#2E3E50]'} rounded-xl border mb-3.5 relative">
         <div class="flex items-center gap-2 text-[11px] font-cinzel font-bold uppercase tracking-widest text-[#FBBF24] mb-1.5">
           <svg class="w-4 h-4 text-[#10B981]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="${SPARK_PATH}" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-          Doom Sovereign Rationale
+          Sovereign Rationale
         </div>
         <p class="text-xs sm:text-sm ${top ? 'text-[#F1F5F9]' : 'text-[#CBD5E1]'} leading-relaxed">${escapeHtml(rec.recommendation_reason)}</p>
       </div>

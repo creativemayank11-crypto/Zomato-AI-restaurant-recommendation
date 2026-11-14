@@ -65,6 +65,10 @@ class Settings(BaseSettings):
     # Comma-separated list of allowed browser origins for CORS,
     # e.g. "https://my-app.vercel.app". Defaults to "*" for local development.
     ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "*")
+
+    # Max /api/v1/recommend calls per client IP per minute (each call costs an
+    # LLM request). 0 disables rate limiting.
+    RATE_LIMIT_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "20"))
     
     # Dataset Storage Paths
     RAW_DATA_PATH: Path = BASE_DIR / os.getenv("RAW_DATA_PATH", "data/raw/zomato_raw.csv")

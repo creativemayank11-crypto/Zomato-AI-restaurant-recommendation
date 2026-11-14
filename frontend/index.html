@@ -3,26 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-  <title>Doom AI Concierge — Bangalore Dining Recommendations</title>
+  <title>Sovereign AI Concierge — Bangalore Dining Recommendations</title>
   <meta name="description" content="AI restaurant recommendations for Bangalore, grounded in the Zomato dataset." />
   <link href="https://fonts.googleapis.com" rel="preconnect" />
   <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Space Grotesk', 'system-ui', 'sans-serif'],
-            cinzel: ['Cinzel', 'serif'],
-            mono: ['JetBrains Mono', 'monospace'],
-          },
-        },
-      },
-    };
-  </script>
+  <!-- Precompiled Tailwind utilities. Rebuild after changing classes in
+       index.html or app.js:  cd tools/tailwind && npm install && npm run build -->
+  <link rel="stylesheet" href="/static/tailwind.css" />
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 
@@ -41,8 +29,8 @@
         </div>
         <div class="min-w-0">
           <h1 class="font-cinzel text-base sm:text-lg font-bold tracking-wider text-[#F1F5F9] flex items-center gap-2 flex-wrap">
-            DOOM AI CONCIERGE
-            <span class="text-[10px] font-mono font-semibold tracking-wider text-[#F59E0B] bg-[#182230] px-2 py-0.5 rounded border border-[#F59E0B]/40">LATVERIA • BLR PROTOCOL</span>
+            SOVEREIGN AI CONCIERGE
+            <span class="text-[10px] font-mono font-semibold tracking-wider text-[#F59E0B] bg-[#182230] px-2 py-0.5 rounded border border-[#F59E0B]/40">BLR PROTOCOL</span>
           </h1>
           <p class="text-xs text-[#94A3B8] font-mono hidden sm:block tracking-wide">Sovereign culinary intelligence decree engine for Bangalore</p>
         </div>

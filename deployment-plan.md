@@ -35,7 +35,7 @@ Browser ──► https://<app>.vercel.app            (static: index.html, app.j
 
 Each of these is required unless marked *optional*. All of them are small.
 
-> **Status (2026-11-14):** §2.1–2.7 are **applied** in the working tree and verified locally (79 tests pass; the app boots from a fresh runtime-only install with Railway's start command; CORS accepts only `ALLOWED_ORIGINS`). §2.8 is not applied. §2.9 (commit & push) is still to do. `frontend/vercel.json` contains the placeholder `RAILWAY_DOMAIN_HERE` until the Railway domain exists (§3.4).
+> **Status (2026-11-14):** §2.1–2.7 are **applied and committed** (commit `78d69ae`) and verified locally (79 tests pass; the app boots from a fresh runtime-only install with Railway's start command; CORS accepts only `ALLOWED_ORIGINS`). §2.9 is **done**: the commit is on `main` of `creativemayank11-crypto/Zomato-AI-restaurant-recommendation` (local remote name: `recommender`). §2.8 (optional polish) is now **applied** too (Tailwind precompiled, branding renamed, rate limiting added; 86 tests pass). The only remaining code edit is replacing the placeholder `RAILWAY_DOMAIN_HERE` in `frontend/vercel.json` once the Railway domain exists (§3.4).
 
 ### 2.1 Ship the dataset with the backend — **required**
 
@@ -191,11 +191,17 @@ __pycache__/
 
 (Or delete `frontend/legacy/` once the new UI is confirmed.)
 
-### 2.8 Pre-launch polish — *optional*
+### 2.8 Pre-launch polish — *optional* (applied)
 
-- **Tailwind CDN:** `index.html` loads Tailwind from `cdn.tailwindcss.com`, which logs a "should not be used in production" warning and generates styles in the browser at runtime. It works, but for a production-grade build, compile Tailwind once with the Tailwind CLI into a static CSS file and drop the CDN script.
-- **Branding:** the UI uses "Doom" / "Latveria" (Marvel names). Rename before making the site public.
-- **Rate limiting:** `/api/v1/recommend` calls Groq on every request, so a public URL can burn API credits. Consider adding a simple per-IP limit (e.g. the `slowapi` package) or a Groq spend cap.
+- **Tailwind precompiled:** the CDN script is gone. Utilities are compiled into `frontend/tailwind.css` (~27 KB, committed) by the tooling in `tools/tailwind/`. Vercel needs no build step. **After changing Tailwind classes in `index.html` or `app.js`, rebuild:**
+
+  ```bash
+  cd tools/tailwind && npm install && npm run build
+  ```
+
+  The tooling lives in `tools/tailwind/` (not the repo root) so Railway doesn't detect a `package.json` and build the backend as a Node app.
+- **Branding:** "Doom" / "Latveria" renamed to **Sovereign AI Concierge**; CSS tokens are now `--brand-*`.
+- **Rate limiting:** `/api/v1/recommend` is limited per client IP with an in-memory sliding window (`src/api/rate_limit.py`, no extra dependency). Over the limit it returns HTTP 429 with a `Retry-After` header, and the UI shows the message. Configure with `RATE_LIMIT_PER_MINUTE` (default 20, `0` disables). Caveats: limits are per Railway replica, and the client IP comes from `X-Forwarded-For`, so this is cost protection rather than a security boundary — also set a spend limit in the Groq console.
 
 ### 2.9 Commit and push
 
@@ -214,8 +220,10 @@ git commit -m "Prepare for Railway + Vercel deployment"
 ```
 
 ```bash
-git push origin main
+git push recommender deploy-railway-vercel:main
 ```
+
+(`recommender` is the remote for `https://github.com/creativemayank11-crypto/Zomato-AI-restaurant-recommendation.git`, the repo Railway and Vercel deploy from.)
 
 Confirm `.env` is **not** in the commit (`git status` should not list it — it is git-ignored). The Groq key must only ever live in Railway's variables.
 
@@ -245,6 +253,7 @@ Service → **Variables**. Use `.env.example` as the reference; values below mat
 | `LOG_LEVEL` | `INFO` | |
 | `DEBUG` | `False` | |
 | `ALLOWED_ORIGINS` | `https://<your-app>.vercel.app` | Only if §2.5 was applied. Fill in after the Vercel deploy. |
+| `RATE_LIMIT_PER_MINUTE` | `20` | Per-IP limit on `/api/v1/recommend`; `0` disables. |
 
 Do **not** set `PORT` (Railway provides it). `RAW_DATA_PATH` / `PROCESSED_DATA_PATH` can stay at their defaults.
 
@@ -316,6 +325,7 @@ On the Vercel URL, in a normal browser:
 | Logs | Railway service → Deployments → Logs (look for `Recommend:` and `Groq token usage`). |
 | Rotate the Groq key | Create a new key in the Groq console → update `GROQ_API_KEY` on Railway → redeploy → revoke the old key. |
 | Update the dataset | Run `python scripts/run_etl.py` locally, run tests, commit the new `zomato_clean.parquet`, push. |
+| Change frontend styling | Edit classes in `frontend/index.html` / `app.js`, run `npm run build` in `tools/tailwind/`, commit `frontend/tailwind.css`. |
 | Custom domain | Add it in Vercel (frontend). The backend can keep its Railway domain since the browser never sees it. |
 
 ### Things to watch
@@ -339,3 +349,7 @@ On the Vercel URL, in a normal browser:
 | `config/settings.py`, `app.py` | `ALLOWED_ORIGINS` for CORS (recommended) |
 | `frontend/vercel.json` | New — `/static`, `/api`, `/health` rewrites |
 | `frontend/.vercelignore` | New — exclude `streamlit_app.py`, `legacy/` |
+| `frontend/tailwind.css`, `tools/tailwind/*` | New — precompiled Tailwind + build tooling (§2.8) |
+| `frontend/index.html`, `app.js`, `style.css` | Branding renamed; CDN script replaced by `tailwind.css` (§2.8) |
+| `src/api/rate_limit.py`, `src/api/routes.py`, `config/settings.py` | Per-IP rate limit on `/api/v1/recommend` (§2.8) |
+| `tests/conftest.py`, `tests/test_rate_limit.py` | New — limiter reset fixture + rate-limit tests |

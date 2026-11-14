@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 
 from config.settings import settings
 from src.api.dependencies import get_dataset, get_llm_client, get_llm_provider
+from src.api.rate_limit import enforce_recommend_rate_limit
 from src.engine.filter import filter_restaurants
 from src.engine.recommender import generate_recommendations
 from src.models.schema import (
@@ -100,6 +101,8 @@ def get_meta_options() -> Dict[str, Any]:
     response_model=RecommendationResponse,
     summary="Get AI-powered restaurant recommendations",
     tags=["Recommendations"],
+    dependencies=[Depends(enforce_recommend_rate_limit)],
+    responses={429: {"description": "Rate limit exceeded (see RATE_LIMIT_PER_MINUTE)"}},
 )
 def recommend(
     preferences: UserPreferences,

@@ -46,7 +46,7 @@ class TestUIEndpoints:
         response = client.get("/static/style.css")
         assert response.status_code == 200
         assert ":root" in response.text
-        assert "--doom-gold" in response.text
+        assert "--brand-gold" in response.text
 
     def test_static_js_served(self, client):
         """GET /static/app.js should deliver the client logic."""

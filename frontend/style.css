@@ -1,18 +1,18 @@
-/* Doom AI Concierge — custom styles layered on top of Tailwind utilities.
+/* Sovereign AI Concierge — custom styles layered on top of Tailwind utilities.
    Design source: stitch_ai_culinary_concierge (Google Stitch export). */
 
 /* Design tokens (from the Stitch export's palette) */
 :root {
   color-scheme: dark;
-  --doom-void: #070A0E;
-  --doom-armor: #0D131A;
-  --doom-plate: #131B24;
-  --doom-surface: #182230;
-  --doom-border: #2E3E50;
-  --doom-emerald: #10B981;
-  --doom-gold: #F59E0B;
-  --doom-text: #F1F5F9;
-  --doom-muted: #94A3B8;
+  --brand-void: #070A0E;
+  --brand-armor: #0D131A;
+  --brand-plate: #131B24;
+  --brand-surface: #182230;
+  --brand-border: #2E3E50;
+  --brand-emerald: #10B981;
+  --brand-gold: #F59E0B;
+  --brand-text: #F1F5F9;
+  --brand-muted: #94A3B8;
 }
 
 /* Scrollbar */
@@ -56,14 +56,14 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); backgroun
 input[type=range]:focus-visible { outline: 2px solid #10B981; outline-offset: 4px; }
 
 /* Skeleton shimmer */
-@keyframes doomShimmer {
+@keyframes brandShimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
 .skeleton-box {
   background: linear-gradient(90deg, #131B24 25%, #243242 37%, #131B24 63%);
   background-size: 200% 100%;
-  animation: doomShimmer 1.6s infinite ease-in-out;
+  animation: brandShimmer 1.6s infinite ease-in-out;
 }
 
 /* Cuisine chips (rendered by app.js) */
@@ -113,11 +113,11 @@ input[type=range]:focus-visible { outline: 2px solid #10B981; outline-offset: 4p
 select option, select optgroup { background-color: #182230; color: #F1F5F9; }
 
 /* Fade-in for result cards */
-@keyframes doomRise {
+@keyframes brandRise {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.rec-card { animation: doomRise 0.35s ease both; }
+.rec-card { animation: brandRise 0.35s ease both; }
 
 @media (prefers-reduced-motion: reduce) {
   .rec-card, .skeleton-box, .animate-ping, .animate-pulse, .animate-spin { animation: none !important; }

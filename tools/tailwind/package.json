@@ -1,0 +1,12 @@
+{
+  "name": "frontend-css-build",
+  "private": true,
+  "description": "Compiles the Tailwind utilities used by frontend/index.html and frontend/app.js into frontend/tailwind.css",
+  "scripts": {
+    "build": "tailwindcss -c tailwind.config.js -i input.css -o ../../frontend/tailwind.css --minify",
+    "watch": "tailwindcss -c tailwind.config.js -i input.css -o ../../frontend/tailwind.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.16"
+  }
+}
