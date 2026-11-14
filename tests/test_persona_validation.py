@@ -55,6 +55,24 @@ class TestUIEndpoints:
         assert "DOMContentLoaded" in response.text
         assert "/api/v1/recommend" in response.text
 
+    def test_static_tailwind_served(self, client):
+        """GET /static/tailwind.css should deliver the precompiled utilities."""
+        response = client.get("/static/tailwind.css")
+        assert response.status_code == 200
+        assert "font-cinzel" in response.text
+
+    def test_non_public_frontend_files_not_served(self, client):
+        """Only allow-listed assets are public; other files in frontend/ must 404."""
+        for path in (
+            "/static/streamlit_app.py",
+            "/static/vercel.json",
+            "/static/.vercelignore",
+            "/static/index.html",
+            "/static/../app.py",
+            "/static/%2e%2e/app.py",
+        ):
+            assert client.get(path).status_code == 404, path
+
 
 # ---------------------------------------------------------------------------
 # 2. Persona 1: Budget Student Bite

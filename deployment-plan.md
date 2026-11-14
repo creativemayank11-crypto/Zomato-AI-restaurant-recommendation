@@ -1,355 +1,130 @@
-# Deployment Plan — Backend on Railway, Frontend on Vercel
+# Deployment Plan — Vercel (frontend + backend)
 
-This plan deploys the AI restaurant recommender in two pieces:
+**Status (2026-11-14): live** at **https://zomato-ai-restaurant-recommendation-bay.vercel.app/**
 
-| Piece | What it is | Where it goes |
-|---|---|---|
-| **Backend** | FastAPI app (`app.py`): `/health`, `/api/v1/meta/options`, `/api/v1/recommend`, plus the Parquet dataset and the Groq LLM client | **Railway** |
-| **Frontend** | Static files in `frontend/` (`index.html`, `app.js`, `style.css`) | **Vercel** |
+The whole app — FastAPI backend and the static frontend — runs on **Vercel** from the GitHub repo
+`creativemayank11-crypto/Zomato-AI-restaurant-recommendation` (branch `main`).
+
+> **What changed from the original plan:** the plan was *backend on Railway, frontend on Vercel*. The Railway deploy failed before building, and when the repo was imported into Vercel with the **repo root** as the root directory, Vercel detected the FastAPI app (`app.py`) and runs it as a Python function. That serves the API *and* the frontend (FastAPI already serves `frontend/` under `/static` and `index.html` at `/`), so Railway is not needed. The Railway-specific files are kept for reference — see §7.
 
 ---
 
-## 1. Target architecture
+## 1. Architecture (as deployed)
 
 ```
-Browser ──► https://<app>.vercel.app            (static: index.html, app.js, style.css)
+Browser ──► https://zomato-ai-restaurant-recommendation-bay.vercel.app
               │
-              │  Vercel rewrites (server-side proxy, same origin for the browser)
-              │    /api/*   ──►  https://<api>.up.railway.app/api/*
-              │    /health  ──►  https://<api>.up.railway.app/health
               ▼
-         Railway: uvicorn app:app  ──►  Groq API
-                      │
-                      └── data/processed/zomato_clean.parquet (loaded into memory at startup)
+         Vercel Python function: FastAPI app (app.py)
+              ├── GET  /                      → frontend/index.html
+              ├── GET  /static/*              → frontend/ (tailwind.css, style.css, app.js)
+              ├── GET  /health                → health + dataset status
+              ├── GET  /api/v1/meta/options   → localities, cuisines
+              ├── POST /api/v1/recommend      → filter → Groq LLM → grounding check
+              └── GET  /docs                  → Swagger UI
+                       │
+                       ├── data/processed/zomato_clean.parquet (committed, loaded at cold start)
+                       └── Groq API (GROQ_API_KEY from Vercel env vars)
 ```
 
-**Why proxy through Vercel rewrites instead of calling Railway directly from the browser?**
-
-- `frontend/app.js` calls **relative** URLs (`/health`, `/api/v1/...`). With rewrites, those keep working unchanged, so the frontend needs no code change and no build step.
-- The browser only ever talks to the Vercel domain, so there are **no CORS issues**.
-- The Railway URL can change (e.g. a custom domain later) by editing a single file (`frontend/vercel.json`).
+- Single origin: the browser only talks to the Vercel domain, so there are no CORS issues and `frontend/app.js` keeps using relative URLs.
+- `requirements.txt` holds only runtime dependencies, which keeps the function bundle small.
 
 ---
 
-## 2. Pre-deployment code changes (do these first, in the repo)
+## 2. Verified on the live site (2026-11-14)
 
-Each of these is required unless marked *optional*. All of them are small.
-
-> **Status (2026-11-14):** §2.1–2.7 are **applied and committed** (commit `78d69ae`) and verified locally (79 tests pass; the app boots from a fresh runtime-only install with Railway's start command; CORS accepts only `ALLOWED_ORIGINS`). §2.9 is **done**: the commit is on `main` of `creativemayank11-crypto/Zomato-AI-restaurant-recommendation` (local remote name: `recommender`). §2.8 (optional polish) is now **applied** too (Tailwind precompiled, branding renamed, rate limiting added; 86 tests pass). The only remaining code edit is replacing the placeholder `RAILWAY_DOMAIN_HERE` in `frontend/vercel.json` once the Railway domain exists (§3.4).
-
-### 2.1 Ship the dataset with the backend — **required**
-
-The app loads `data/processed/zomato_clean.parquet` at startup and **crashes if it is missing** (`load_processed_data` raises `FileNotFoundError`). That file is currently git-ignored, so Railway would never receive it.
-
-The processed file is only **~366 KB**, so commit it. (The 574 MB raw CSV must stay ignored.)
-
-In `.gitignore`, under the "Large Data Files" block, add the exception line:
-
-```gitignore
-data/processed/*.parquet
-!data/processed/zomato_clean.parquet
-```
-
-Then:
-
-```bash
-git add -f data/processed/zomato_clean.parquet
-```
-
-> Alternative (not recommended): run `python scripts/run_etl.py` during the Railway build. It downloads the full raw dataset from Hugging Face on every deploy — slow, and it adds the heavy `datasets` dependency to the image.
-
-### 2.2 Split runtime vs. dev dependencies — **strongly recommended**
-
-`requirements.txt` currently includes `streamlit`, `datasets`, `pytest`, `google-generativeai`, `duckdb` (unused), etc. Railway installs everything in `requirements.txt`, which makes builds slow and the image large. The backend only imports: `fastapi`, `uvicorn`, `pydantic`, `pydantic-settings`, `python-dotenv`, `pandas`, `numpy`, `pyarrow`, `tenacity`, `groq` (and `openai` / `google-genai` only if you switch provider).
-
-Recommended layout:
-
-**`requirements.txt`** (what Railway installs):
-
-```text
-fastapi>=0.110.0
-uvicorn[standard]>=0.27.0
-pydantic>=2.0.0
-pydantic-settings>=2.0.0
-python-dotenv>=1.0.0
-pandas>=2.0.0
-numpy>=1.26.0
-pyarrow>=14.0.0
-tenacity>=8.2.0
-groq>=0.9.0
-# Only needed if DEFAULT_LLM_PROVIDER is switched away from groq:
-# openai>=1.12.0
-# google-genai>=0.1.0
-```
-
-**`requirements-dev.txt`** (local development, tests, ETL, Streamlit):
-
-```text
--r requirements.txt
-openai>=1.12.0
-google-genai>=0.1.0
-google-generativeai>=0.5.0
-datasets>=2.18.0
-duckdb>=0.9.0
-streamlit>=1.32.0
-pytest>=8.0.0
-pytest-asyncio>=0.23.0
-httpx>=0.27.0
-```
-
-Local setup then becomes `pip install -r requirements-dev.txt`. Run the test suite afterwards to confirm nothing is missing.
-
-### 2.3 Pin the Python version — **required**
-
-Create `.python-version` in the repo root containing:
-
-```text
-3.12
-```
-
-(Local development uses Python 3.12.10; Railway's builder reads this file.)
-
-### 2.4 Railway start command and health check — **required**
-
-Create `railway.json` in the repo root:
-
-```json
-{
-  "$schema": "https://railway.com/railway.schema.json",
-  "deploy": {
-    "startCommand": "uvicorn app:app --host 0.0.0.0 --port $PORT",
-    "healthcheckPath": "/health",
-    "healthcheckTimeout": 60,
-    "restartPolicyType": "ON_FAILURE"
-  }
-}
-```
-
-Notes:
-- Railway injects `PORT`; the app must bind to it. The `API_HOST` / `API_PORT` settings in `config/settings.py` are **not** used by the uvicorn CLI, so no change is needed there.
-- `/health` returns `"status": "healthy"` once the dataset is loaded, so it is a good readiness check.
-
-### 2.5 Lock down CORS — **recommended**
-
-`app.py` currently allows every origin (`allow_origins=["*"]`). With the Vercel proxy, the browser never calls Railway directly, so CORS can be restricted.
-
-1. In `config/settings.py`, add:
-
-   ```python
-   # Comma-separated list of allowed browser origins, e.g. "https://my-app.vercel.app"
-   ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "*")
-   ```
-
-2. In `app.py`, replace `allow_origins=["*"]` with:
-
-   ```python
-   allow_origins=[o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()],
-   ```
-
-3. Set `ALLOWED_ORIGINS` on Railway to the Vercel production domain (see §3.3). Local development keeps the `*` default.
-
-### 2.6 Vercel config for the frontend — **required**
-
-`index.html` loads `/static/style.css` and `/static/app.js` (the FastAPI backend serves the `frontend/` folder under `/static`). On Vercel those files live at the site root, so add a rewrite for `/static/*`, plus the API proxy rules.
-
-Create `frontend/vercel.json`:
-
-```json
-{
-  "rewrites": [
-    { "source": "/static/:path*", "destination": "/:path*" },
-    { "source": "/api/:path*", "destination": "https://<RAILWAY_DOMAIN>/api/:path*" },
-    { "source": "/health", "destination": "https://<RAILWAY_DOMAIN>/health" }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
-      ]
-    }
-  ]
-}
-```
-
-Replace `<RAILWAY_DOMAIN>` (in the committed file: `RAILWAY_DOMAIN_HERE`) with the domain from §3.4 (e.g. `zomato-api-production.up.railway.app`) — so the backend must be deployed first.
-
-With this setup the same `index.html` works both locally (served by FastAPI) and on Vercel.
-
-### 2.7 Keep non-web files out of the Vercel deploy — **required**
-
-`frontend/` also contains `streamlit_app.py` (a separate Python app) and `legacy/` (backup of the old UI). Neither should be published.
-
-Create `frontend/.vercelignore`:
-
-```text
-streamlit_app.py
-legacy/
-__pycache__/
-```
-
-(Or delete `frontend/legacy/` once the new UI is confirmed.)
-
-### 2.8 Pre-launch polish — *optional* (applied)
-
-- **Tailwind precompiled:** the CDN script is gone. Utilities are compiled into `frontend/tailwind.css` (~27 KB, committed) by the tooling in `tools/tailwind/`. Vercel needs no build step. **After changing Tailwind classes in `index.html` or `app.js`, rebuild:**
-
-  ```bash
-  cd tools/tailwind && npm install && npm run build
-  ```
-
-  The tooling lives in `tools/tailwind/` (not the repo root) so Railway doesn't detect a `package.json` and build the backend as a Node app.
-- **Branding:** "Doom" / "Latveria" renamed to **Sovereign AI Concierge**; CSS tokens are now `--brand-*`.
-- **Rate limiting:** `/api/v1/recommend` is limited per client IP with an in-memory sliding window (`src/api/rate_limit.py`, no extra dependency). Over the limit it returns HTTP 429 with a `Retry-After` header, and the UI shows the message. Configure with `RATE_LIMIT_PER_MINUTE` (default 20, `0` disables). Caveats: limits are per Railway replica, and the client IP comes from `X-Forwarded-For`, so this is cost protection rather than a security boundary — also set a spend limit in the Groq console.
-
-### 2.9 Commit and push
-
-The working tree currently has many uncommitted changes (bug fixes, the new UI, and the changes above). Before deploying:
-
-```bash
-python -m pytest -q
-```
-
-```bash
-git add -A
-```
-
-```bash
-git commit -m "Prepare for Railway + Vercel deployment"
-```
-
-```bash
-git push recommender deploy-railway-vercel:main
-```
-
-(`recommender` is the remote for `https://github.com/creativemayank11-crypto/Zomato-AI-restaurant-recommendation.git`, the repo Railway and Vercel deploy from.)
-
-Confirm `.env` is **not** in the commit (`git status` should not list it — it is git-ignored). The Groq key must only ever live in Railway's variables.
+| Check | Result |
+|---|---|
+| `/` page loads with the Sovereign AI Concierge design | ✅ |
+| `/static/tailwind.css`, `style.css`, `app.js` | ✅ 200 |
+| `/health` | ✅ `healthy`, `dataset_loaded: true`, 12,137 restaurants, provider `groq` |
+| `/api/v1/meta/options` | ✅ 94 localities, cuisines load in the UI |
+| `POST /api/v1/recommend` (Indiranagar, 3 picks) | ✅ HTTP 200 in ~2.5 s, AI-written reasons (Groq key works) |
+| "Romantic Date Night" preset in the browser | ✅ 5 cards, ~1 s, no console errors |
+| `/.env` | ✅ 404 (not exposed) |
 
 ---
 
-## 3. Deploy the backend to Railway
+## 3. Vercel project settings
 
-### 3.1 Create the service
+| Setting | Value |
+|---|---|
+| Git repository | `creativemayank11-crypto/Zomato-AI-restaurant-recommendation`, branch `main` |
+| Root Directory | repo root (`./`) — **not** `frontend` |
+| Framework | detected automatically (FastAPI / Python) |
+| Build / Install / Output commands | defaults |
 
-1. Railway dashboard → **New Project** → **Deploy from GitHub repo** → select the project repository.
-2. Root directory: the repo root (the folder containing `app.py`).
-3. Railway detects Python from `requirements.txt` + `.python-version` and uses `railway.json` for the start command and health check.
-
-### 3.2 Set environment variables
-
-Service → **Variables**. Use `.env.example` as the reference; values below match the current working local config.
+### Environment variables (Vercel → Project → Settings → Environment Variables)
 
 | Variable | Value | Notes |
 |---|---|---|
-| `DEFAULT_LLM_PROVIDER` | `groq` | |
-| `GROQ_API_KEY` | *(your key)* | Secret. Paste directly into Railway, never commit. |
-| `GROQ_MODEL` | `openai/gpt-oss-120b` | |
-| `GROQ_REASONING_FORMAT` | `hidden` | |
-| `GROQ_REASONING_EFFORT` | `low` | |
-| `TEMPERATURE` | `0.2` | |
-| `MAX_OUTPUT_TOKENS` | `1024` | Lower values truncate the AI reply (see earlier fix). |
-| `LOG_LEVEL` | `INFO` | |
-| `DEBUG` | `False` | |
-| `ALLOWED_ORIGINS` | `https://<your-app>.vercel.app` | Only if §2.5 was applied. Fill in after the Vercel deploy. |
-| `RATE_LIMIT_PER_MINUTE` | `20` | Per-IP limit on `/api/v1/recommend`; `0` disables. |
+| `GROQ_API_KEY` | *(your key)* | **Set.** Secret — only ever in Vercel, never committed. |
+| `DEFAULT_LLM_PROVIDER` | `groq` | Optional; this is the code default. |
+| `GROQ_MODEL` | `openai/gpt-oss-120b` | Optional; code default. |
+| `MAX_OUTPUT_TOKENS` | `1024` | Optional; code default. Lower values truncate the AI reply. |
+| `RATE_LIMIT_PER_MINUTE` | `20` | Optional; code default. See caveat in §5. |
+| `LOG_LEVEL` | `INFO` | Optional. |
+| `ALLOWED_ORIGINS` | *(leave unset)* | Not needed: frontend and API share one origin. |
 
-Do **not** set `PORT` (Railway provides it). `RAW_DATA_PATH` / `PROCESSED_DATA_PATH` can stay at their defaults.
-
-If `GROQ_API_KEY` is missing, the app still starts but runs in deterministic (no-AI) mode — check the startup log for `Groq client initialised`.
-
-### 3.3 Region and sizing
-
-- Pick a region close to your users.
-- The dataset is small (~12k rows in memory), so the smallest instance size is enough to start.
-
-### 3.4 Expose it
-
-Service → **Settings → Networking → Generate Domain**. Note the domain (e.g. `xxxx.up.railway.app`) — it goes into `frontend/vercel.json`.
-
-### 3.5 Verify the backend
-
-```bash
-curl https://<RAILWAY_DOMAIN>/health
-```
-
-Expected: `"status":"healthy"`, `"dataset_loaded":true`, `"total_restaurants":12137`, `"llm_provider":"groq"`.
-
-```bash
-curl -X POST https://<RAILWAY_DOMAIN>/api/v1/recommend -H "Content-Type: application/json" -d "{\"location\":\"Indiranagar\",\"max_recommendations\":3,\"additional_notes\":\"cozy date night\"}"
-```
-
-Expected: HTTP 200 with 3 recommendations whose reasons are AI-written (not the generic "is a top-rated choice (4.7★, N votes)" fallback text). Also check the Railway logs for `Groq token usage` lines.
+After changing a variable, redeploy (Vercel → Deployments → ⋯ → Redeploy) for it to take effect.
 
 ---
 
-## 4. Deploy the frontend to Vercel
-
-1. Put the real Railway domain into `frontend/vercel.json` (§2.6), commit, push.
-2. Vercel dashboard → **Add New → Project** → import the same GitHub repo.
-3. Project settings:
-   - **Root Directory:** `frontend`
-   - **Framework Preset:** `Other`
-   - **Build Command:** *(leave empty)*
-   - **Output Directory:** `.` (or leave default)
-   - **Install Command:** *(leave empty)*
-4. Deploy. Vercel serves `index.html` at `/` and applies the rewrites.
-5. If §2.5 was applied, copy the production Vercel URL into Railway's `ALLOWED_ORIGINS` and redeploy the backend.
-
----
-
-## 5. End-to-end verification checklist
-
-On the Vercel URL, in a normal browser:
-
-- [ ] Page loads with styles (no unstyled HTML) — confirms `/static/*` rewrite and Tailwind.
-- [ ] Header shows **12,137** venues and the provider badge — confirms `/health` proxy.
-- [ ] Locality dropdown lists ~94 localities and cuisine chips appear — confirms `/api/v1/meta/options` proxy.
-- [ ] Click each of the 3 presets → 5 result cards with AI rationales.
-- [ ] Manual search with "Top 3" works.
-- [ ] A strict search (e.g. Kengeri, rating 4.8+, high budget) shows the amber "Search criteria relaxed" banner.
-- [ ] Phone width (DevTools device mode, 375px): no sideways scroll, button reachable.
-- [ ] Browser DevTools → Network: all requests go to the Vercel domain, no CORS errors in Console.
-- [ ] Railway logs show the requests and `Groq token usage` lines.
-
----
-
-## 6. Operations
+## 4. Day-to-day operations
 
 | Task | How |
 |---|---|
-| Redeploy after code changes | Push to `main` — both Railway and Vercel auto-deploy from GitHub. |
-| Roll back the backend | Railway → Deployments → pick a previous deployment → Redeploy. |
-| Roll back the frontend | Vercel → Deployments → previous deployment → Promote / Instant Rollback. |
-| Logs | Railway service → Deployments → Logs (look for `Recommend:` and `Groq token usage`). |
-| Rotate the Groq key | Create a new key in the Groq console → update `GROQ_API_KEY` on Railway → redeploy → revoke the old key. |
-| Update the dataset | Run `python scripts/run_etl.py` locally, run tests, commit the new `zomato_clean.parquet`, push. |
-| Change frontend styling | Edit classes in `frontend/index.html` / `app.js`, run `npm run build` in `tools/tailwind/`, commit `frontend/tailwind.css`. |
-| Custom domain | Add it in Vercel (frontend). The backend can keep its Railway domain since the browser never sees it. |
-
-### Things to watch
-
-- **Cold starts / restarts:** startup loads the dataset and initialises the Groq client (~2–4 s locally). The health check covers this.
-- **LLM latency:** a recommendation normally takes ~1–2 s. If Groq fails, the backend retries up to 3 times and then falls back to deterministic picks (still HTTP 200), so slow requests can take longer. If you see proxy timeouts on Vercel, check Vercel's limits for external rewrites on your plan.
-- **Groq usage/costs:** each recommendation is one Groq call (~700 prompt + ~450 completion tokens at 5 picks). Watch usage in the Groq console, especially once the URL is public.
+| Deploy a change | Push to `main` on the GitHub repo — Vercel redeploys automatically. From this machine: `git push recommender deploy-railway-vercel:main` |
+| Preview a change | Push any other branch — Vercel builds a preview URL for it. |
+| Roll back | Vercel → Deployments → previous deployment → **Promote** / Instant Rollback. |
+| Logs | Vercel → Project → **Logs** (look for `Recommend:` and `Groq token usage` lines). |
+| Rotate the Groq key | New key in the Groq console → update `GROQ_API_KEY` in Vercel → redeploy → revoke the old key. |
+| Update the dataset | `python scripts/run_etl.py` locally → run tests → commit `data/processed/zomato_clean.parquet` → push. |
+| Change frontend styling | Edit classes in `frontend/index.html` / `app.js` → `cd tools/tailwind && npm install && npm run build` → commit `frontend/tailwind.css` → push. |
+| Run locally | `.venv/Scripts/python -m uvicorn app:app --port 8000` → http://localhost:8000 |
+| Custom domain | Vercel → Project → Settings → Domains. |
 
 ---
 
-## 7. Summary of new / changed files
+## 5. Caveats of running on Vercel (serverless)
 
-| File | Change |
+- **Rate limiting is per function instance.** The limiter in `src/api/rate_limit.py` keeps counts in memory; Vercel may run several instances and recycle them at any time, each with its own counter. Treat it as a speed bump. **Set a monthly spend limit in the Groq console** as the real cost guard.
+- **Cold starts.** After a quiet period the first request starts the function, imports pandas/pyarrow and loads the dataset — expect a few extra seconds on that request.
+- **Function duration.** A recommendation normally takes ~1–3 s. If Groq is slow or failing, the backend retries up to 3 times before falling back to deterministic picks, which can take longer. If you see timeouts, raise the function's max duration in the Vercel project settings (limits depend on your plan).
+- **Bundle size.** pandas + numpy + pyarrow are large. Keep dev-only packages in `requirements-dev.txt`, not `requirements.txt`, or the function may exceed Vercel's size limit.
+
+---
+
+## 6. Optional clean-ups
+
+1. ~~**Extra files served under `/static`.**~~ **Done.** `app.py` now serves only `app.js`, `style.css` and `tailwind.css` under `/static`; everything else (e.g. `streamlit_app.py`, `vercel.json`) returns 404, covered by a test. The old-UI backup `frontend/legacy/` was deleted (still in git history, commit `78d69ae`).
+2. **Unused Railway / split-deploy files.** `railway.json`, `frontend/vercel.json` (still contains the placeholder `RAILWAY_DOMAIN_HERE`) and `frontend/.vercelignore` are not used by this setup. Delete them, or keep them if you might switch to Railway later (§7).
+3. **Failed Railway project.** Delete it in the Railway dashboard if you won't use it, so it doesn't retry builds.
+4. **Groq spend limit.** Set one in the Groq console (see §5).
+
+---
+
+## 7. Alternative: backend on Railway, frontend-only on Vercel
+
+Kept for reference; this was the original plan and the repo still contains its config.
+
+- **Railway** (backend): deploy the repo root; `railway.json` sets `uvicorn app:app --host 0.0.0.0 --port $PORT` and the `/health` check; `.python-version` pins 3.12. Set the same environment variables as §3, plus `ALLOWED_ORIGINS=https://<your-vercel-domain>`. Generate a domain under Settings → Networking.
+- **Vercel** (frontend only): set **Root Directory = `frontend`**, framework *Other*, no build. Replace `RAILWAY_DOMAIN_HERE` in `frontend/vercel.json` with the Railway domain — it rewrites `/static/*` to the site root and proxies `/api/*` and `/health` to Railway. `frontend/.vercelignore` keeps `streamlit_app.py` out of that deploy.
+- Why you might switch: a long-running server keeps the dataset warm (no cold starts) and makes the in-memory rate limit meaningful.
+- Status of the attempt on 2026-11-14: the Railway deployment failed before building (empty build log); the cause was not diagnosed. The CLI login (`railway login`, including `--browserless`) also never completed on this machine.
+
+---
+
+## 8. Pre-deployment changes already made (for the record)
+
+| Change | Files |
 |---|---|
-| `.gitignore` | Un-ignore `data/processed/zomato_clean.parquet` |
-| `data/processed/zomato_clean.parquet` | Committed (~366 KB) |
-| `requirements.txt` | Runtime-only dependencies |
-| `requirements-dev.txt` | New — dev, test, ETL and Streamlit dependencies |
-| `.python-version` | New — `3.12` |
-| `railway.json` | New — start command + health check |
-| `config/settings.py`, `app.py` | `ALLOWED_ORIGINS` for CORS (recommended) |
-| `frontend/vercel.json` | New — `/static`, `/api`, `/health` rewrites |
-| `frontend/.vercelignore` | New — exclude `streamlit_app.py`, `legacy/` |
-| `frontend/tailwind.css`, `tools/tailwind/*` | New — precompiled Tailwind + build tooling (§2.8) |
-| `frontend/index.html`, `app.js`, `style.css` | Branding renamed; CDN script replaced by `tailwind.css` (§2.8) |
-| `src/api/rate_limit.py`, `src/api/routes.py`, `config/settings.py` | Per-IP rate limit on `/api/v1/recommend` (§2.8) |
-| `tests/conftest.py`, `tests/test_rate_limit.py` | New — limiter reset fixture + rate-limit tests |
+| Processed dataset committed (~366 KB) so the app can start in the cloud | `.gitignore`, `data/processed/zomato_clean.parquet` |
+| Runtime vs dev dependencies split | `requirements.txt`, `requirements-dev.txt` |
+| Python pinned to 3.12 | `.python-version` |
+| Configurable CORS | `ALLOWED_ORIGINS` in `config/settings.py`, `app.py` |
+| Precompiled Tailwind (no CDN) + build tooling | `frontend/tailwind.css`, `tools/tailwind/` |
+| Branding renamed to "Sovereign AI Concierge" | `frontend/index.html`, `app.js`, `style.css` |
+| Per-IP rate limit on `/api/v1/recommend` | `src/api/rate_limit.py`, `src/api/routes.py`, `RATE_LIMIT_PER_MINUTE` |
+| Railway / split-Vercel config (see §7) | `railway.json`, `frontend/vercel.json`, `frontend/.vercelignore` |

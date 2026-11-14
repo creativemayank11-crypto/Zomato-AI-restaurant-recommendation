@@ -85,14 +85,25 @@ async def add_response_time_header(request: Request, call_next) -> Response:
 # ---------------------------------------------------------------------------
 
 from pathlib import Path
-from fastapi.staticfiles import StaticFiles
+from fastapi import HTTPException
 from fastapi.responses import FileResponse
 
 app.include_router(router)
 
 FRONTEND_DIR = Path(__file__).resolve().parent / "frontend"
+
+# Only these files are served under /static. The frontend/ folder also holds
+# non-public files (streamlit_app.py, Vercel config), so it is not mounted wholesale.
+PUBLIC_ASSETS = {"app.js", "style.css", "tailwind.css"}
+
 if FRONTEND_DIR.is_dir():
-    app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
+
+    @app.get("/static/{filename}", include_in_schema=False)
+    async def serve_asset(filename: str):
+        """Serve an allow-listed frontend asset."""
+        if filename not in PUBLIC_ASSETS:
+            raise HTTPException(status_code=404, detail="Not Found")
+        return FileResponse(FRONTEND_DIR / filename)
 
     @app.get("/", include_in_schema=False)
     async def serve_index():
