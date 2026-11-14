@@ -1,17 +1,19 @@
 /* Sovereign AI Concierge — component styles layered on top of Tailwind utilities.
+   Theme: armoured-tech HUD (red + gold plating, gunmetal base, cyan readouts).
    Design system: docs/design-system.md */
 
 /* Design tokens */
 :root {
   color-scheme: dark;
-  --brand-void: #070A0E;
-  --brand-armor: #0D131A;
-  --brand-plate: #131B24;
-  --brand-surface: #182230;
-  --brand-border: #2E3E50;
-  --brand-border-strong: #3D5066;
-  --brand-emerald: #10B981;
-  --brand-emerald-deep: #059669;
+  --brand-void: #050506;
+  --brand-armor: #0E0E11;
+  --brand-plate: #141418;
+  --brand-surface: #1C1C22;
+  --brand-border: #3A3A44;
+  --brand-border-strong: #55555F;
+  --brand-red: #EF4444;
+  --brand-red-deep: #DC2626;
+  --brand-cyan: #67E8F9;
   --brand-gold: #F59E0B;
   --brand-gold-light: #FBBF24;
   --brand-text: #F1F5F9;
@@ -24,11 +26,11 @@
 /* Scrollbar */
 ::-webkit-scrollbar { width: 7px; height: 7px; }
 ::-webkit-scrollbar-track { background: var(--brand-void); }
-::-webkit-scrollbar-thumb { background: #243242; border: 1px solid var(--brand-border); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--brand-emerald-deep); }
+::-webkit-scrollbar-thumb { background: #2A2A32; border: 1px solid var(--brand-border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--brand-red-deep); }
 
 /* Focus ring */
-*:focus-visible { outline: 2px solid var(--brand-emerald); outline-offset: 2px; }
+*:focus-visible { outline: 2px solid var(--brand-cyan); outline-offset: 2px; }
 
 /* Native <option> elements inherit dark colours */
 select option, select optgroup { background-color: var(--brand-surface); color: var(--brand-text); }
@@ -39,7 +41,7 @@ select option, select optgroup { background-color: var(--brand-surface); color: 
   100% { background-position: 200% 0; }
 }
 .skeleton-box {
-  background: linear-gradient(90deg, var(--brand-plate) 25%, #243242 37%, var(--brand-plate) 63%);
+  background: linear-gradient(90deg, var(--brand-plate) 25%, #2A2A32 37%, var(--brand-plate) 63%);
   background-size: 200% 100%;
   animation: brandShimmer 1.6s infinite ease-in-out;
 }
@@ -61,11 +63,11 @@ select option, select optgroup { background-color: var(--brand-surface); color: 
   color: var(--brand-body);
   cursor: pointer;
 }
-.cuisine-chip:hover { border-color: var(--brand-emerald); color: var(--brand-text); }
+.cuisine-chip:hover { border-color: var(--brand-red); color: var(--brand-text); }
 .cuisine-chip.selected {
-  background-color: rgba(5, 150, 105, 0.2);
-  color: #6EE7B7;
-  border-color: var(--brand-emerald);
+  background-color: rgba(220, 38, 38, 0.2);
+  color: #FCA5A5;
+  border-color: var(--brand-red);
   font-weight: 600;
 }
 
@@ -77,7 +79,7 @@ select option, select optgroup { background-color: var(--brand-surface); color: 
   border-style: dashed;
   cursor: pointer;
 }
-.vibe-chip:hover { color: var(--brand-text); border-color: var(--brand-emerald); }
+.vibe-chip:hover { color: var(--brand-text); border-color: var(--brand-red); }
 
 .refine-chip {
   padding: 0.4rem 0.8rem;
@@ -85,7 +87,7 @@ select option, select optgroup { background-color: var(--brand-surface); color: 
   color: var(--brand-text);
   cursor: pointer;
 }
-.refine-chip:hover { border-color: var(--brand-emerald); background-color: #1d2a3b; }
+.refine-chip:hover { border-color: var(--brand-red); background-color: #24242B; }
 
 .step-chip {
   padding: 0.25rem 0.6rem;
@@ -98,14 +100,14 @@ select option, select optgroup { background-color: var(--brand-surface); color: 
 
 .budget-card, .rating-option, .toggle-chip { transition: border-color 0.15s ease, background-color 0.15s ease; }
 .budget-card.active, .rating-option.active, .toggle-chip.active {
-  background-color: rgba(6, 78, 59, 0.45);
-  border-color: var(--brand-emerald);
+  background-color: rgba(127, 29, 29, 0.5);
+  border-color: var(--brand-red);
 }
-.budget-card.active .tier-price { color: #6EE7B7; }
+.budget-card.active .tier-price { color: #FCA5A5; }
 .rating-option.active { font-weight: 600; }
 .budget-card:has(input:focus-visible),
 .rating-option:has(input:focus-visible),
-.toggle-chip:has(input:focus-visible) { outline: 2px solid var(--brand-emerald); outline-offset: 2px; }
+.toggle-chip:has(input:focus-visible) { outline: 2px solid var(--brand-cyan); outline-offset: 2px; }
 
 /* ── Result cards ──────────────────────────────────────────────────────── */
 @keyframes brandRise {
@@ -121,7 +123,11 @@ select option, select optgroup { background-color: var(--brand-surface); color: 
   transition: border-color 0.15s ease;
 }
 .rec-card:hover { border-color: var(--brand-border-strong); }
-.rec-card-top { border: 2px solid var(--brand-gold); }
+.rec-card-top {
+  border: 2px solid var(--brand-gold);
+  background: linear-gradient(180deg, rgba(220, 38, 38, 0.10) 0%, var(--brand-plate) 55%);
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.35), 0 10px 30px -12px rgba(220, 38, 38, 0.45);
+}
 .rec-card-top:hover { border-color: var(--brand-gold-light); }
 @media (min-width: 640px) { .rec-card { padding: 1.5rem; } }
 
@@ -137,7 +143,11 @@ select option, select optgroup { background-color: var(--brand-surface); color: 
   border: 1px solid var(--brand-border);
   color: var(--brand-muted);
 }
-.card-icon-top { color: var(--brand-gold-light); border-color: rgba(245, 158, 11, 0.5); }
+.card-icon-top {
+  color: var(--brand-gold-light);
+  border-color: rgba(245, 158, 11, 0.6);
+  background: radial-gradient(circle, rgba(220, 38, 38, 0.35) 0%, var(--brand-surface) 70%);
+}
 
 .top-pick-pill {
   display: inline-block;
@@ -165,10 +175,10 @@ select option, select optgroup { background-color: var(--brand-surface); color: 
   font-size: 0.8125rem;
   font-weight: 700;
 }
-.rating-high { background: rgba(6, 78, 59, 0.6); border-color: var(--brand-emerald); color: #6EE7B7; }
-.rating-mid  { background: rgba(120, 53, 15, 0.4); border-color: rgba(245, 158, 11, 0.5); color: var(--brand-gold-light); }
-.rating-low  { background: rgba(69, 10, 10, 0.5); border-color: rgba(239, 68, 68, 0.5); color: #FCA5A5; }
-.rating-new  { background: var(--brand-surface); border-color: var(--brand-border-strong); color: var(--brand-emerald); }
+.rating-high { background: rgba(120, 53, 15, 0.45); border-color: var(--brand-gold); color: var(--brand-gold-light); }
+.rating-mid  { background: rgba(22, 78, 99, 0.45); border-color: rgba(103, 232, 249, 0.5); color: var(--brand-cyan); }
+.rating-low  { background: rgba(69, 10, 10, 0.5); border-color: rgba(239, 68, 68, 0.4); color: #FCA5A5; }
+.rating-new  { background: var(--brand-surface); border-color: var(--brand-border-strong); color: var(--brand-cyan); }
 
 .pill {
   display: inline-block;
@@ -179,7 +189,7 @@ select option, select optgroup { background-color: var(--brand-surface); color: 
   border: 1px solid var(--brand-border);
   border-radius: 0.4rem;
 }
-.pill-feature { color: #6EE7B7; border-color: rgba(16, 185, 129, 0.35); }
+.pill-feature { color: #FCA5A5; border-color: rgba(239, 68, 68, 0.4); }
 
 .why-label {
   display: block;
@@ -217,7 +227,7 @@ select option, select optgroup { background-color: var(--brand-surface); color: 
   cursor: pointer;
   transition: border-color 0.15s ease;
 }
-.action-btn:hover { border-color: var(--brand-emerald); }
+.action-btn:hover { border-color: var(--brand-red); }
 .save-btn.is-saved { color: var(--brand-gold-light); border-color: rgba(245, 158, 11, 0.5); }
 
 .vote-btn {
@@ -229,10 +239,88 @@ select option, select optgroup { background-color: var(--brand-surface); color: 
   cursor: pointer;
   filter: grayscale(0.6);
 }
-.vote-btn:hover:not(:disabled) { border-color: var(--brand-emerald); filter: none; }
+.vote-btn:hover:not(:disabled) { border-color: var(--brand-red); filter: none; }
 .vote-btn:disabled { cursor: default; opacity: 0.45; }
-.vote-btn.voted { opacity: 1; filter: none; border-color: var(--brand-emerald); }
+.vote-btn.voted { opacity: 1; filter: none; border-color: var(--brand-red); }
 
 @media (prefers-reduced-motion: reduce) {
   .rec-card, .skeleton-box, .animate-ping, .animate-spin { animation: none !important; }
+}
+
+/* ── Armoured HUD layer ────────────────────────────────────────────────── */
+
+/* Page: faint engineering grid with a warm glow behind the header */
+body {
+  background-color: #09090B;
+  background-image:
+    radial-gradient(ellipse 70% 40% at 50% -10%, rgba(220, 38, 38, 0.18), transparent 70%),
+    linear-gradient(rgba(103, 232, 249, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(103, 232, 249, 0.035) 1px, transparent 1px);
+  background-size: 100% 100%, 32px 32px, 32px 32px;
+  background-attachment: fixed;
+}
+
+/* Corner brackets, like a targeting frame (panels and result cards) */
+.hud-frame, .rec-card { position: relative; }
+.hud-frame::before, .hud-frame::after,
+.rec-card::before, .rec-card::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  border-color: var(--brand-gold);
+  opacity: 0.85;
+}
+.hud-frame::before, .rec-card::before {
+  top: -1px; left: -1px;
+  border-top-width: 2px; border-left-width: 2px; border-top-style: solid; border-left-style: solid;
+  border-top-left-radius: 0.6rem;
+}
+.hud-frame::after, .rec-card::after {
+  bottom: -1px; right: -1px;
+  border-bottom-width: 2px; border-right-width: 2px; border-bottom-style: solid; border-right-style: solid;
+  border-bottom-right-radius: 0.6rem;
+}
+.rec-card-top::before, .rec-card-top::after { width: 22px; height: 22px; border-color: var(--brand-red); }
+
+/* Display headings: wide-tracked techno type */
+.font-display { letter-spacing: 0.08em; }
+
+/* Section titles get a thin red rule */
+.hud-title { display: flex; align-items: center; gap: 0.6rem; }
+.hud-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.6), transparent);
+}
+
+/* Readouts (status, numbers) in cyan */
+.hud-readout { color: var(--brand-cyan); }
+
+/* Glowing ring emblem */
+.emblem {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, #0E0E11 45%, #1C1C22 100%);
+  border: 2px solid var(--brand-gold);
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.55), 0 0 18px rgba(103, 232, 249, 0.35);
+}
+
+/* Primary action: red plating with a gold edge */
+.btn-primary {
+  background: linear-gradient(180deg, #E11D2E 0%, #B91C1C 100%);
+  border: 1px solid rgba(251, 191, 36, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 6px 18px -8px rgba(220, 38, 38, 0.7);
+  letter-spacing: 0.04em;
+}
+.btn-primary:hover:not(:disabled) { background: linear-gradient(180deg, #EF4444 0%, #C81E1E 100%); }
+
+@media (prefers-reduced-motion: reduce) {
+  body { background-attachment: scroll; }
 }

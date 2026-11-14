@@ -8,7 +8,7 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ['Space Grotesk', 'system-ui', 'sans-serif'],
-        cinzel: ['Cinzel', 'serif'],
+        display: ['Orbitron', 'Space Grotesk', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
     },

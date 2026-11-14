@@ -5,7 +5,7 @@
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <title>Sovereign AI Concierge — Bangalore Restaurant Recommendations</title>
   <meta name="description" content="Tell it the occasion and get AI restaurant picks for Bangalore, grounded in 12,000+ Zomato listings — with directions, phone numbers and real reviews." />
-  <meta name="theme-color" content="#0B0F14" />
+  <meta name="theme-color" content="#09090B" />
   <!-- Link previews (Open Graph / Twitter) -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Sovereign AI Concierge — Bangalore dining picks" />
@@ -18,52 +18,52 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <link href="https://fonts.googleapis.com" rel="preconnect" />
   <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <!-- Precompiled Tailwind utilities. Rebuild after changing classes in
        index.html or app.js:  cd tools/tailwind && npm install && npm run build -->
   <link rel="stylesheet" href="/static/tailwind.css" />
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 
-<body class="bg-[#0B0F14] text-[#CBD5E1] font-sans min-h-screen antialiased flex flex-col selection:bg-[#059669]/40 selection:text-white">
-  <a href="#results-panel" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-2 focus:rounded-lg focus:bg-[#182230] focus:text-white">Skip to results</a>
+<body class="bg-[#09090B] text-[#CBD5E1] font-sans min-h-screen antialiased flex flex-col selection:bg-[#DC2626]/40 selection:text-white">
+  <a href="#results-panel" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-2 focus:rounded-lg focus:bg-[#1C1C22] focus:text-white">Skip to results</a>
 
   <!-- TOP BAR -->
-  <header class="border-b border-[#2E3E50] bg-[#0D131A]/95 backdrop-blur sticky top-0 z-40 px-4 sm:px-6 lg:px-8 py-3">
+  <header class="border-b border-[#3A3A44] bg-[#0E0E11]/95 backdrop-blur sticky top-0 z-40 px-4 sm:px-6 lg:px-8 py-3">
     <div class="max-w-[1440px] mx-auto flex items-center justify-between gap-3">
       <a href="/" class="flex items-center gap-3 min-w-0" aria-label="Sovereign AI Concierge home">
-        <span class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#064E3B] to-[#131B24] border border-[#F59E0B]/50 flex items-center justify-center shrink-0" aria-hidden="true">
-          <svg class="w-5 h-5 text-[#FBBF24]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 18h18l-2-11-4.5 5L12 4l-2.5 8L5 7 3 18z"></path></svg>
+        <span class="emblem shrink-0" aria-hidden="true">
+          <svg class="w-5 h-5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5" fill="none" stroke="#67E8F9" stroke-width="1.6" stroke-dasharray="3 2"/><circle cx="12" cy="12" r="3.6" fill="#A5F3FC"/><circle cx="12" cy="12" r="1.6" fill="#ECFEFF"/></svg>
         </span>
         <span class="min-w-0">
-          <span class="block font-cinzel text-sm sm:text-lg font-bold tracking-wider text-[#F1F5F9] truncate">SOVEREIGN AI CONCIERGE</span>
+          <span class="block font-display text-sm sm:text-lg font-bold tracking-wider text-[#F1F5F9] truncate">SOVEREIGN AI CONCIERGE</span>
           <span class="hidden sm:block text-xs text-[#94A3B8]">Restaurant picks for Bangalore, grounded in Zomato data</span>
         </span>
       </a>
       <div class="flex items-center gap-2 shrink-0">
-        <button type="button" id="saved-toggle" class="hidden items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#131B24] border border-[#2E3E50] hover:border-[#F59E0B] text-xs text-[#F1F5F9]" aria-controls="saved-panel" aria-expanded="false">
+        <button type="button" id="saved-toggle" class="hidden items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141418] border border-[#3A3A44] hover:border-[#F59E0B] text-xs text-[#F1F5F9]" aria-controls="saved-panel" aria-expanded="false">
           <svg class="w-3.5 h-3.5 text-[#FBBF24]" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
           Saved <span id="saved-count" class="font-mono">0</span>
         </button>
-        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#131B24] border border-[#2E3E50] text-xs" title="Service status">
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#141418] border border-[#3A3A44] text-xs" title="Service status">
           <span class="relative flex h-2.5 w-2.5" aria-hidden="true">
-            <span id="status-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-60"></span>
-            <span id="status-dot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#059669]"></span>
+            <span id="status-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#67E8F9] opacity-60"></span>
+            <span id="status-dot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#22D3EE]"></span>
           </span>
-          <span class="text-[#E2E8F0] font-mono text-xs whitespace-nowrap" id="status-text">Connecting…</span>
+          <span class="hud-readout font-mono text-xs whitespace-nowrap" id="status-text">Connecting…</span>
         </div>
-        <span class="hidden md:inline-flex px-2.5 py-1.5 rounded-lg bg-[#182230] border border-[#3D5066] text-xs font-mono font-semibold text-[#F1F5F9]" id="model-badge" title="AI provider">GROQ</span>
+        <span class="hidden md:inline-flex px-2.5 py-1.5 rounded-lg bg-[#1C1C22] border border-[#55555F] text-xs font-mono font-semibold text-[#F1F5F9]" id="model-badge" title="AI provider">GROQ</span>
       </div>
     </div>
   </header>
 
   <!-- QUICK PRESETS -->
-  <section class="border-b border-[#2E3E50] bg-[#070A0E]/80 px-4 sm:px-6 lg:px-8 py-3" aria-labelledby="presets-title">
+  <section class="border-b border-[#3A3A44] bg-[#050506]/80 px-4 sm:px-6 lg:px-8 py-3" aria-labelledby="presets-title">
     <div class="max-w-[1440px] mx-auto">
-      <h2 id="presets-title" class="font-cinzel text-xs font-bold uppercase tracking-widest text-[#FBBF24] mb-2">Quick presets</h2>
+      <h2 id="presets-title" class="hud-title font-display text-xs font-bold uppercase tracking-widest text-[#FBBF24] mb-2">Quick presets</h2>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-        <button class="preset-btn group text-left p-3 rounded-xl bg-[#131B24] hover:bg-[#182230] border border-[#2E3E50] hover:border-[#10B981] transition-colors flex items-center gap-3" id="preset-student" type="button">
-          <span class="w-9 h-9 rounded-lg bg-[#182230] text-[#F59E0B] flex items-center justify-center shrink-0 border border-[#2E3E50]" aria-hidden="true">
+        <button class="preset-btn group text-left p-3 rounded-xl bg-[#141418] hover:bg-[#1C1C22] border border-[#3A3A44] hover:border-[#EF4444] transition-colors flex items-center gap-3" id="preset-student" type="button">
+          <span class="w-9 h-9 rounded-lg bg-[#1C1C22] text-[#F59E0B] flex items-center justify-center shrink-0 border border-[#3A3A44]" aria-hidden="true">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
           </span>
           <span class="min-w-0">
@@ -71,8 +71,8 @@
             <span class="block text-xs text-[#94A3B8] truncate">BTM · under ₹500 · fast food</span>
           </span>
         </button>
-        <button class="preset-btn group text-left p-3 rounded-xl bg-[#131B24] hover:bg-[#182230] border border-[#2E3E50] hover:border-[#F59E0B] transition-colors flex items-center gap-3" id="preset-romantic" type="button">
-          <span class="w-9 h-9 rounded-lg bg-[#182230] text-[#F59E0B] flex items-center justify-center shrink-0 border border-[#2E3E50]" aria-hidden="true">
+        <button class="preset-btn group text-left p-3 rounded-xl bg-[#141418] hover:bg-[#1C1C22] border border-[#3A3A44] hover:border-[#F59E0B] transition-colors flex items-center gap-3" id="preset-romantic" type="button">
+          <span class="w-9 h-9 rounded-lg bg-[#1C1C22] text-[#F59E0B] flex items-center justify-center shrink-0 border border-[#3A3A44]" aria-hidden="true">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
           </span>
           <span class="min-w-0">
@@ -80,8 +80,8 @@
             <span class="block text-xs text-[#94A3B8] truncate">Indiranagar · medium · Italian · table booking</span>
           </span>
         </button>
-        <button class="preset-btn group text-left p-3 rounded-xl bg-[#131B24] hover:bg-[#182230] border border-[#2E3E50] hover:border-[#10B981] transition-colors flex items-center gap-3" id="preset-family" type="button">
-          <span class="w-9 h-9 rounded-lg bg-[#182230] text-[#F59E0B] flex items-center justify-center shrink-0 border border-[#2E3E50]" aria-hidden="true">
+        <button class="preset-btn group text-left p-3 rounded-xl bg-[#141418] hover:bg-[#1C1C22] border border-[#3A3A44] hover:border-[#EF4444] transition-colors flex items-center gap-3" id="preset-family" type="button">
+          <span class="w-9 h-9 rounded-lg bg-[#1C1C22] text-[#F59E0B] flex items-center justify-center shrink-0 border border-[#3A3A44]" aria-hidden="true">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
           </span>
           <span class="min-w-0">
@@ -100,15 +100,15 @@
       <aside class="w-full lg:w-[380px] shrink-0 lg:sticky lg:top-24 z-10 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto rounded-2xl" aria-label="Search preferences">
 
         <!-- Mobile summary bar (shown after a search on small screens) -->
-        <div id="filters-summary" class="hidden lg:hidden items-center justify-between gap-3 p-3 rounded-xl bg-[#131B24] border border-[#2E3E50]">
+        <div id="filters-summary" class="hidden lg:hidden items-center justify-between gap-3 p-3 rounded-xl bg-[#141418] border border-[#3A3A44]">
           <span class="text-sm text-[#F1F5F9] truncate" id="filters-summary-text"></span>
-          <button type="button" id="filters-edit" class="shrink-0 px-3 py-1.5 rounded-lg bg-[#182230] border border-[#3D5066] text-xs font-semibold text-[#F1F5F9]" aria-controls="console-panel" aria-expanded="false">Edit</button>
+          <button type="button" id="filters-edit" class="shrink-0 px-3 py-1.5 rounded-lg bg-[#1C1C22] border border-[#55555F] text-xs font-semibold text-[#F1F5F9]" aria-controls="console-panel" aria-expanded="false">Edit</button>
         </div>
 
-        <div id="console-panel" class="bg-[#131B24] border border-[#2E3E50] rounded-2xl p-5 sm:p-6">
-          <div class="flex items-center justify-between border-b border-[#2E3E50] pb-3 mb-5">
-            <h2 class="font-cinzel text-base font-bold text-[#F1F5F9] tracking-wider">Command Console</h2>
-            <button class="text-xs font-semibold text-[#94A3B8] hover:text-[#10B981] px-2.5 py-1 rounded bg-[#182230] border border-[#2E3E50] hover:border-[#10B981]" id="reset-btn" type="button" aria-label="Reset all preferences">Reset</button>
+        <div id="console-panel" class="hud-frame bg-[#141418] border border-[#3A3A44] rounded-2xl p-5 sm:p-6">
+          <div class="flex items-center justify-between border-b border-[#3A3A44] pb-3 mb-5">
+            <h2 class="font-display text-base font-bold text-[#F1F5F9] tracking-wider">Command Console</h2>
+            <button class="text-xs font-semibold text-[#94A3B8] hover:text-[#EF4444] px-2.5 py-1 rounded bg-[#1C1C22] border border-[#3A3A44] hover:border-[#EF4444]" id="reset-btn" type="button" aria-label="Reset all preferences">Reset</button>
           </div>
 
           <form class="space-y-5" id="recommendation-form" novalidate>
@@ -119,7 +119,7 @@
                 <span class="text-xs font-normal text-[#94A3B8]" id="locality-count"></span>
               </label>
               <input id="location-input" list="locality-list" autocomplete="off" spellcheck="false"
-                     class="w-full bg-[#182230] text-[#F1F5F9] text-sm rounded-xl border border-[#2E3E50] hover:border-[#3D5066] focus:border-[#10B981] focus:outline-none px-3.5 py-2.5 placeholder-[#64748B]"
+                     class="w-full bg-[#1C1C22] text-[#F1F5F9] text-sm rounded-xl border border-[#3A3A44] hover:border-[#55555F] focus:border-[#EF4444] focus:outline-none px-3.5 py-2.5 placeholder-[#64748B]"
                      placeholder="Type an area, e.g. Indiranagar" value="Indiranagar" aria-describedby="location-hint" />
               <datalist id="locality-list"></datalist>
               <p id="location-hint" class="mt-1 text-xs text-[#94A3B8]">Start typing to search, or choose "All Bangalore".</p>
@@ -129,15 +129,15 @@
             <div>
               <div class="flex items-center justify-between mb-1.5">
                 <span class="text-sm font-semibold text-[#E2E8F0]" id="cuisine-label">Cuisines <span class="font-normal text-[#94A3B8]">(optional)</span></span>
-                <span class="text-xs text-[#10B981]" id="selected-cuisines-count">Any cuisine</span>
+                <span class="text-xs text-[#EF4444]" id="selected-cuisines-count">Any cuisine</span>
               </div>
               <input id="cuisine-search" type="search" autocomplete="off" placeholder="Search cuisines…"
-                     class="w-full mb-2 bg-[#0D131A] text-[#F1F5F9] text-sm rounded-lg border border-[#2E3E50] focus:border-[#10B981] focus:outline-none px-3 py-2 placeholder-[#64748B]" aria-label="Search cuisines" />
-              <div class="flex flex-wrap gap-1.5 max-h-[132px] overflow-y-auto p-2 bg-[#0D131A] rounded-xl border border-[#2E3E50]" id="cuisine-chips" role="group" aria-labelledby="cuisine-label">
+                     class="w-full mb-2 bg-[#0E0E11] text-[#F1F5F9] text-sm rounded-lg border border-[#3A3A44] focus:border-[#EF4444] focus:outline-none px-3 py-2 placeholder-[#64748B]" aria-label="Search cuisines" />
+              <div class="flex flex-wrap gap-1.5 max-h-[132px] overflow-y-auto p-2 bg-[#0E0E11] rounded-xl border border-[#3A3A44]" id="cuisine-chips" role="group" aria-labelledby="cuisine-label">
                 <span class="text-xs text-[#64748B] p-1">Loading cuisines…</span>
               </div>
               <div class="flex justify-end mt-1">
-                <button class="text-xs text-[#10B981] hover:underline" id="reset-chips-btn" type="button">Clear cuisines</button>
+                <button class="text-xs text-[#EF4444] hover:underline" id="reset-chips-btn" type="button">Clear cuisines</button>
               </div>
             </div>
 
@@ -145,17 +145,17 @@
             <fieldset>
               <legend class="text-sm font-semibold text-[#E2E8F0] mb-1.5">Budget for two</legend>
               <div class="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Budget for two">
-                <label class="budget-card cursor-pointer p-2.5 rounded-xl bg-[#182230] border border-[#2E3E50] hover:border-[#10B981] flex flex-col items-center text-center" data-tier="low">
+                <label class="budget-card cursor-pointer p-2.5 rounded-xl bg-[#1C1C22] border border-[#3A3A44] hover:border-[#EF4444] flex flex-col items-center text-center" data-tier="low">
                   <input class="sr-only" name="budget_tier" type="radio" value="low" />
                   <span class="text-sm font-semibold text-[#F1F5F9]">Low</span>
                   <span class="tier-price text-xs text-[#94A3B8] mt-0.5">&lt; ₹500</span>
                 </label>
-                <label class="budget-card active cursor-pointer p-2.5 rounded-xl bg-[#182230] border border-[#2E3E50] hover:border-[#10B981] flex flex-col items-center text-center" data-tier="medium">
+                <label class="budget-card active cursor-pointer p-2.5 rounded-xl bg-[#1C1C22] border border-[#3A3A44] hover:border-[#EF4444] flex flex-col items-center text-center" data-tier="medium">
                   <input checked class="sr-only" name="budget_tier" type="radio" value="medium" />
                   <span class="text-sm font-semibold text-[#F1F5F9]">Medium</span>
                   <span class="tier-price text-xs text-[#94A3B8] mt-0.5">₹500–1,500</span>
                 </label>
-                <label class="budget-card cursor-pointer p-2.5 rounded-xl bg-[#182230] border border-[#2E3E50] hover:border-[#10B981] flex flex-col items-center text-center" data-tier="high">
+                <label class="budget-card cursor-pointer p-2.5 rounded-xl bg-[#1C1C22] border border-[#3A3A44] hover:border-[#EF4444] flex flex-col items-center text-center" data-tier="high">
                   <input class="sr-only" name="budget_tier" type="radio" value="high" />
                   <span class="text-sm font-semibold text-[#F1F5F9]">High</span>
                   <span class="tier-price text-xs text-[#94A3B8] mt-0.5">&gt; ₹1,500</span>
@@ -167,10 +167,10 @@
             <fieldset>
               <legend class="text-sm font-semibold text-[#E2E8F0] mb-1.5">Minimum rating</legend>
               <div class="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Minimum rating" id="rating-options">
-                <label class="rating-option cursor-pointer py-2 rounded-lg bg-[#182230] border border-[#2E3E50] hover:border-[#10B981] text-center text-sm text-[#F1F5F9]"><input class="sr-only" type="radio" name="min_rating" value="1.0" />Any</label>
-                <label class="rating-option active cursor-pointer py-2 rounded-lg bg-[#182230] border border-[#2E3E50] hover:border-[#10B981] text-center text-sm text-[#F1F5F9]"><input class="sr-only" type="radio" name="min_rating" value="3.5" checked />3.5+</label>
-                <label class="rating-option cursor-pointer py-2 rounded-lg bg-[#182230] border border-[#2E3E50] hover:border-[#10B981] text-center text-sm text-[#F1F5F9]"><input class="sr-only" type="radio" name="min_rating" value="4.0" />4.0+</label>
-                <label class="rating-option cursor-pointer py-2 rounded-lg bg-[#182230] border border-[#2E3E50] hover:border-[#10B981] text-center text-sm text-[#F1F5F9]"><input class="sr-only" type="radio" name="min_rating" value="4.5" />4.5+</label>
+                <label class="rating-option cursor-pointer py-2 rounded-lg bg-[#1C1C22] border border-[#3A3A44] hover:border-[#EF4444] text-center text-sm text-[#F1F5F9]"><input class="sr-only" type="radio" name="min_rating" value="1.0" />Any</label>
+                <label class="rating-option active cursor-pointer py-2 rounded-lg bg-[#1C1C22] border border-[#3A3A44] hover:border-[#EF4444] text-center text-sm text-[#F1F5F9]"><input class="sr-only" type="radio" name="min_rating" value="3.5" checked />3.5+</label>
+                <label class="rating-option cursor-pointer py-2 rounded-lg bg-[#1C1C22] border border-[#3A3A44] hover:border-[#EF4444] text-center text-sm text-[#F1F5F9]"><input class="sr-only" type="radio" name="min_rating" value="4.0" />4.0+</label>
+                <label class="rating-option cursor-pointer py-2 rounded-lg bg-[#1C1C22] border border-[#3A3A44] hover:border-[#EF4444] text-center text-sm text-[#F1F5F9]"><input class="sr-only" type="radio" name="min_rating" value="4.5" />4.5+</label>
               </div>
               <p class="mt-1 text-xs text-[#94A3B8]">Most Bangalore restaurants are rated 3.5–3.9.</p>
             </fieldset>
@@ -179,15 +179,15 @@
             <fieldset>
               <legend class="text-sm font-semibold text-[#E2E8F0] mb-1.5">Must-haves <span class="font-normal text-[#94A3B8]">(optional)</span></legend>
               <div class="flex flex-wrap gap-2">
-                <label class="toggle-chip cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#182230] border border-[#2E3E50] text-sm text-[#E2E8F0]">
-                  <input type="checkbox" id="book-table" class="accent-[#10B981]" /> Table booking
+                <label class="toggle-chip cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1C1C22] border border-[#3A3A44] text-sm text-[#E2E8F0]">
+                  <input type="checkbox" id="book-table" class="accent-[#EF4444]" /> Table booking
                 </label>
-                <label class="toggle-chip cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#182230] border border-[#2E3E50] text-sm text-[#E2E8F0]">
-                  <input type="checkbox" id="online-order" class="accent-[#10B981]" /> Online ordering
+                <label class="toggle-chip cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1C1C22] border border-[#3A3A44] text-sm text-[#E2E8F0]">
+                  <input type="checkbox" id="online-order" class="accent-[#EF4444]" /> Online ordering
                 </label>
               </div>
               <label class="block mt-2 text-xs text-[#94A3B8]" for="dining-type">Kind of place</label>
-              <select id="dining-type" class="mt-1 w-full bg-[#182230] text-[#F1F5F9] text-sm rounded-lg border border-[#2E3E50] focus:border-[#10B981] focus:outline-none px-3 py-2">
+              <select id="dining-type" class="mt-1 w-full bg-[#1C1C22] text-[#F1F5F9] text-sm rounded-lg border border-[#3A3A44] focus:border-[#EF4444] focus:outline-none px-3 py-2">
                 <option value="">Any kind of place</option>
               </select>
             </fieldset>
@@ -195,7 +195,7 @@
             <!-- Occasion -->
             <div>
               <label class="block text-sm font-semibold text-[#E2E8F0] mb-1.5" for="user-notes">What's the occasion? <span class="font-normal text-[#94A3B8]">(the AI reads this)</span></label>
-              <textarea class="w-full bg-[#0D131A] text-[#F1F5F9] text-sm rounded-xl border border-[#2E3E50] hover:border-[#3D5066] focus:border-[#10B981] focus:outline-none p-3 placeholder-[#64748B] resize-none" id="user-notes" maxlength="300" placeholder="e.g. cozy candlelit dinner, outdoor seating, quiet enough to talk" rows="3"></textarea>
+              <textarea class="w-full bg-[#0E0E11] text-[#F1F5F9] text-sm rounded-xl border border-[#3A3A44] hover:border-[#55555F] focus:border-[#EF4444] focus:outline-none p-3 placeholder-[#64748B] resize-none" id="user-notes" maxlength="300" placeholder="e.g. cozy candlelit dinner, outdoor seating, quiet enough to talk" rows="3"></textarea>
               <div class="flex flex-wrap gap-1.5 mt-1.5" id="vibe-examples" aria-label="Example occasions"></div>
               <div class="flex justify-end mt-1">
                 <span class="text-xs text-[#94A3B8]" id="char-count">0 / 300</span>
@@ -205,14 +205,14 @@
             <!-- Count -->
             <div class="flex items-center justify-between">
               <label class="text-sm font-semibold text-[#E2E8F0]" for="max-recs-select">Number of results</label>
-              <select class="bg-[#182230] text-[#F1F5F9] text-sm rounded-lg border border-[#2E3E50] px-3 py-1.5 focus:border-[#10B981] focus:outline-none" id="max-recs-select">
+              <select class="bg-[#1C1C22] text-[#F1F5F9] text-sm rounded-lg border border-[#3A3A44] px-3 py-1.5 focus:border-[#EF4444] focus:outline-none" id="max-recs-select">
                 <option value="3">3</option>
                 <option selected value="5">5</option>
               </select>
             </div>
 
             <!-- Submit (desktop; mobile uses the sticky bar below) -->
-            <button class="hidden lg:flex w-full py-3 px-4 rounded-xl bg-[#059669] hover:bg-[#10B981] active:scale-[0.99] disabled:opacity-60 disabled:cursor-wait text-white font-semibold text-base border border-[#34D399]/40 transition-colors items-center justify-center gap-2" id="search-btn" type="submit">
+            <button class="hidden lg:flex w-full py-3 px-4 rounded-xl btn-primary active:scale-[0.99] disabled:opacity-60 disabled:cursor-wait text-white font-semibold text-base transition-colors items-center justify-center gap-2" id="search-btn" type="submit">
               <svg class="btn-spinner hidden animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor"></path></svg>
               <span class="btn-text">Find restaurants</span>
             </button>
@@ -224,9 +224,9 @@
       <section class="flex-1 w-full min-w-0 scroll-mt-24" aria-live="polite" aria-busy="false" id="results-panel" tabindex="-1">
 
         <!-- Saved places -->
-        <div id="saved-panel" class="hidden mb-4 p-4 bg-[#131B24] border border-[#F59E0B]/40 rounded-2xl">
+        <div id="saved-panel" class="hidden mb-4 p-4 bg-[#141418] border border-[#F59E0B]/40 rounded-2xl">
           <div class="flex items-center justify-between mb-3">
-            <h3 class="font-cinzel text-sm font-bold tracking-wider text-[#FBBF24]">Saved places</h3>
+            <h3 class="hud-title font-display text-sm font-bold tracking-wider text-[#FBBF24] flex-1 mr-3">Saved places</h3>
             <button type="button" id="saved-close" class="text-xs text-[#94A3B8] hover:text-[#F1F5F9]">Close</button>
           </div>
           <ul id="saved-list" class="space-y-2"></ul>
@@ -234,8 +234,8 @@
 
         <!-- Empty -->
         <div id="empty-state">
-          <div class="bg-[#131B24] border border-[#2E3E50] rounded-2xl p-6 sm:p-8">
-            <h3 class="font-cinzel text-xl font-bold text-[#F1F5F9] tracking-wide">Where shall we dine?</h3>
+          <div class="hud-frame bg-[#141418] border border-[#3A3A44] rounded-2xl p-6 sm:p-8">
+            <h3 class="font-display text-xl font-bold text-[#F1F5F9] tracking-wide">Where shall we dine?</h3>
             <p class="text-sm text-[#94A3B8] mt-1 mb-4">Choose an area, budget and occasion, or tap a preset. Every pick comes from real Zomato listings — no made-up restaurants.</p>
             <div id="recent-searches-wrap" class="hidden mb-5">
               <h4 class="text-xs font-semibold uppercase tracking-wider text-[#94A3B8] mb-2">Recent searches</h4>
@@ -250,31 +250,31 @@
 
         <!-- Loading -->
         <div class="hidden space-y-4" id="loading-state">
-          <div class="flex items-center gap-2.5 p-3.5 bg-[#131B24] border border-[#10B981]/40 rounded-xl text-sm text-[#F1F5F9]">
-            <svg class="animate-spin w-4 h-4 text-[#10B981] shrink-0" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor"></path></svg>
+          <div class="flex items-center gap-2.5 p-3.5 bg-[#141418] border border-[#EF4444]/40 rounded-xl text-sm text-[#F1F5F9]">
+            <svg class="animate-spin w-4 h-4 text-[#EF4444] shrink-0" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor"></path></svg>
             <span>Shortlisting <span id="loading-total">12,137</span> restaurants and asking the AI…</span>
           </div>
           <div class="space-y-4" aria-hidden="true">
-            <div class="bg-[#131B24] border border-[#2E3E50] rounded-2xl p-5 space-y-3"><div class="flex items-center justify-between"><div class="skeleton-box h-6 w-52 rounded-lg"></div><div class="skeleton-box h-7 w-16 rounded-full"></div></div><div class="skeleton-box h-4 w-64 rounded"></div><div class="skeleton-box h-14 w-full rounded-xl"></div></div>
-            <div class="bg-[#131B24] border border-[#2E3E50] rounded-2xl p-5 space-y-3"><div class="flex items-center justify-between"><div class="skeleton-box h-6 w-44 rounded-lg"></div><div class="skeleton-box h-7 w-16 rounded-full"></div></div><div class="skeleton-box h-4 w-56 rounded"></div><div class="skeleton-box h-14 w-full rounded-xl"></div></div>
+            <div class="bg-[#141418] border border-[#3A3A44] rounded-2xl p-5 space-y-3"><div class="flex items-center justify-between"><div class="skeleton-box h-6 w-52 rounded-lg"></div><div class="skeleton-box h-7 w-16 rounded-full"></div></div><div class="skeleton-box h-4 w-64 rounded"></div><div class="skeleton-box h-14 w-full rounded-xl"></div></div>
+            <div class="bg-[#141418] border border-[#3A3A44] rounded-2xl p-5 space-y-3"><div class="flex items-center justify-between"><div class="skeleton-box h-6 w-44 rounded-lg"></div><div class="skeleton-box h-7 w-16 rounded-full"></div></div><div class="skeleton-box h-4 w-56 rounded"></div><div class="skeleton-box h-14 w-full rounded-xl"></div></div>
           </div>
         </div>
 
         <!-- Error -->
-        <div class="hidden bg-[#131B24] border border-red-500/40 rounded-2xl p-8 text-center" id="error-state" role="alert">
+        <div class="hidden bg-[#141418] border border-red-500/40 rounded-2xl p-8 text-center" id="error-state" role="alert">
           <div class="max-w-md mx-auto">
-            <h3 class="font-cinzel text-lg font-bold text-[#F1F5F9] mb-2" id="error-title">Something went wrong</h3>
+            <h3 class="font-display text-lg font-bold text-[#F1F5F9] mb-2" id="error-title">Something went wrong</h3>
             <p class="text-sm text-[#CBD5E1] mb-5" id="error-message">Please try again.</p>
-            <button class="px-5 py-2.5 rounded-xl bg-[#059669] hover:bg-[#10B981] disabled:opacity-60 text-white font-semibold text-sm" id="btn-retry" type="button">Try again</button>
+            <button class="px-5 py-2.5 rounded-xl btn-primary disabled:opacity-60 text-white font-semibold text-sm" id="btn-retry" type="button">Try again</button>
           </div>
         </div>
 
         <!-- No matches (only in strict mode) -->
-        <div class="hidden bg-[#131B24] border border-[#2E3E50] rounded-2xl p-8 text-center" id="no-matches-state">
+        <div class="hidden bg-[#141418] border border-[#3A3A44] rounded-2xl p-8 text-center" id="no-matches-state">
           <div class="max-w-md mx-auto">
-            <h3 class="font-cinzel text-lg font-bold text-[#F1F5F9] mb-2">No exact matches</h3>
+            <h3 class="font-display text-lg font-bold text-[#F1F5F9] mb-2">No exact matches</h3>
             <p class="text-sm text-[#CBD5E1] mb-5" id="no-matches-message">Nothing matches all of your filters.</p>
-            <button class="px-5 py-2.5 rounded-xl bg-[#182230] hover:bg-[#243242] text-[#F1F5F9] border border-[#10B981]/50 text-sm font-semibold" id="btn-relax" type="button">Show closest matches instead</button>
+            <button class="px-5 py-2.5 rounded-xl bg-[#1C1C22] hover:bg-[#2A2A32] text-[#F1F5F9] border border-[#EF4444]/50 text-sm font-semibold" id="btn-relax" type="button">Show closest matches instead</button>
           </div>
         </div>
 
@@ -286,7 +286,7 @@
             <button type="button" id="btn-keep-strict" class="text-xs font-semibold text-[#FBBF24] hover:underline">Keep my exact filters instead</button>
           </div>
 
-          <div class="hidden p-3 rounded-xl bg-[#182230] border border-[#3D5066] text-sm text-[#CBD5E1]" id="ai-fallback-note" role="status">
+          <div class="hidden p-3 rounded-xl bg-[#1C1C22] border border-[#55555F] text-sm text-[#CBD5E1]" id="ai-fallback-note" role="status">
             The AI is busy right now, so these are the top-rated matches with standard descriptions. Try again in a minute for personalised picks.
           </div>
 
@@ -295,7 +295,7 @@
               <h3 class="text-lg sm:text-xl font-semibold text-[#F1F5F9] leading-snug" id="query-summary-text">Top recommendations</h3>
               <p class="text-xs text-[#94A3B8] mt-1" id="query-meta-text"></p>
             </div>
-            <button type="button" id="copy-link" class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#182230] border border-[#2E3E50] hover:border-[#10B981] text-xs text-[#F1F5F9]">
+            <button type="button" id="copy-link" class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C1C22] border border-[#3A3A44] hover:border-[#EF4444] text-xs text-[#F1F5F9]">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" stroke-linecap="round" stroke-linejoin="round"></path></svg>
               <span id="copy-link-text">Copy link</span>
             </button>
@@ -303,7 +303,7 @@
 
           <div class="space-y-4" id="cards-container"></div>
 
-          <div class="p-4 bg-[#131B24] border border-[#2E3E50] rounded-xl" id="refine-bar">
+          <div class="p-4 bg-[#141418] border border-[#3A3A44] rounded-xl" id="refine-bar">
             <p class="text-sm font-semibold text-[#E2E8F0] mb-2">Not quite right? Refine:</p>
             <div class="flex flex-wrap gap-2" id="refine-chips"></div>
           </div>
@@ -317,16 +317,16 @@
   </main>
 
   <!-- Mobile sticky search button -->
-  <div class="lg:hidden fixed bottom-0 inset-x-0 z-30 p-3 bg-[#0D131A]/95 backdrop-blur border-t border-[#2E3E50]">
-    <button type="submit" form="recommendation-form" id="search-btn-mobile" class="w-full py-3 rounded-xl bg-[#059669] hover:bg-[#10B981] disabled:opacity-60 disabled:cursor-wait text-white font-semibold text-base flex items-center justify-center gap-2">
+  <div class="lg:hidden fixed bottom-0 inset-x-0 z-30 p-3 bg-[#0E0E11]/95 backdrop-blur border-t border-[#3A3A44]">
+    <button type="submit" form="recommendation-form" id="search-btn-mobile" class="w-full py-3 rounded-xl bg-[#DC2626] hover:bg-[#EF4444] disabled:opacity-60 disabled:cursor-wait text-white font-semibold text-base flex items-center justify-center gap-2">
       <svg class="btn-spinner hidden animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor"></path></svg>
       <span class="btn-text">Find restaurants</span>
     </button>
   </div>
 
-  <div id="toast" class="hidden fixed bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg bg-[#F1F5F9] text-[#0B0F14] text-sm font-semibold shadow-lg" role="status"></div>
+  <div id="toast" class="hidden fixed bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg bg-[#F1F5F9] text-[#09090B] text-sm font-semibold shadow-lg" role="status"></div>
 
-  <footer class="border-t border-[#2E3E50] px-4 py-4 text-center text-xs text-[#64748B] mb-20 lg:mb-0">
+  <footer class="border-t border-[#3A3A44] px-4 py-4 text-center text-xs text-[#64748B] mb-20 lg:mb-0">
     Restaurant data from the Zomato Bangalore dataset · AI reasoning via Groq · Ratings and prices may be out of date
   </footer>
 

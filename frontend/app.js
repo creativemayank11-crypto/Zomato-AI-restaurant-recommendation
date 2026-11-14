@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function setStatus(online, text) {
     el.statusText.textContent = text;
-    el.statusDot.classList.toggle('bg-[#059669]', online);
+    el.statusDot.classList.toggle('bg-[#22D3EE]', online);
     el.statusDot.classList.toggle('bg-red-500', !online);
     el.statusPing.classList.toggle('hidden', !online);
   }
@@ -694,7 +694,7 @@ document.addEventListener('DOMContentLoaded', () => {
     el.savedToggle.classList.toggle('inline-flex', saved.length > 0);
     if (!saved.length) el.savedPanel.classList.add('hidden');
     el.savedList.innerHTML = saved.map((r) => `
-      <li class="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-[#0D131A] border border-[#2E3E50]">
+      <li class="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-[#0E0E11] border border-[#3A3A44]">
         <span class="min-w-0">
           <span class="block text-sm font-semibold text-[#F1F5F9] truncate">${escapeHtml(r.name)}</span>
           <span class="block text-xs text-[#94A3B8] truncate">${escapeHtml([r.locality, r.rating ? `${Number(r.rating).toFixed(1)}★` : '', r.cost ? `${formatInr(r.cost)} for two` : ''].filter(Boolean).join(' · '))}</span>
@@ -764,13 +764,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (requestNo !== topRatedRequest) return; // a newer request superseded this one
       el.topRatedList.innerHTML = (data.restaurants || []).map((r) => {
         const zomato = safeZomatoUrl(r.zomato_url);
-        return `<div class="p-3 rounded-xl bg-[#0D131A] border border-[#2E3E50]">
+        return `<div class="p-3 rounded-xl bg-[#0E0E11] border border-[#3A3A44]">
           <div class="flex items-start justify-between gap-2">
             <span class="min-w-0 break-words text-sm font-semibold text-[#F1F5F9]">${escapeHtml(r.restaurant_name)}</span>
             ${ratingBadge(parseFloat(r.rating) || 0)}
           </div>
           <p class="text-xs text-[#94A3B8] mt-1">${escapeHtml([r.locality, r.rest_type, r.cost_for_two ? `${formatInr(r.cost_for_two)} for two` : ''].filter(Boolean).join(' · '))}</p>
-          ${zomato ? `<a class="inline-block mt-2 text-xs text-[#34D399] hover:underline" href="${escapeHtml(zomato)}" target="_blank" rel="noopener noreferrer">View on Zomato</a>` : ''}
+          ${zomato ? `<a class="inline-block mt-2 text-xs text-[#F87171] hover:underline" href="${escapeHtml(zomato)}" target="_blank" rel="noopener noreferrer">View on Zomato</a>` : ''}
         </div>`;
       }).join('') || '<p class="text-sm text-[#94A3B8]">No restaurants found for this area.</p>';
     } catch (e) {

@@ -59,7 +59,7 @@ class TestUIEndpoints:
         """GET /static/tailwind.css should deliver the precompiled utilities."""
         response = client.get("/static/tailwind.css")
         assert response.status_code == 200
-        assert "font-cinzel" in response.text
+        assert "font-display" in response.text
 
     def test_non_public_frontend_files_not_served(self, client):
         """Only allow-listed assets are public; other files in frontend/ must 404."""
