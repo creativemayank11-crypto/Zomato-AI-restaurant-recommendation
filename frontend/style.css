@@ -1,7 +1,7 @@
-/* Sovereign AI Concierge — custom styles layered on top of Tailwind utilities.
-   Design source: stitch_ai_culinary_concierge (Google Stitch export). */
+/* Sovereign AI Concierge — component styles layered on top of Tailwind utilities.
+   Design system: docs/design-system.md */
 
-/* Design tokens (from the Stitch export's palette) */
+/* Design tokens */
 :root {
   color-scheme: dark;
   --brand-void: #070A0E;
@@ -9,51 +9,29 @@
   --brand-plate: #131B24;
   --brand-surface: #182230;
   --brand-border: #2E3E50;
+  --brand-border-strong: #3D5066;
   --brand-emerald: #10B981;
+  --brand-emerald-deep: #059669;
   --brand-gold: #F59E0B;
+  --brand-gold-light: #FBBF24;
   --brand-text: #F1F5F9;
+  --brand-body: #CBD5E1;
   --brand-muted: #94A3B8;
+  --radius-card: 1rem;
+  --radius-control: 0.75rem;
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 7px; height: 7px; }
-::-webkit-scrollbar-track { background: #070A0E; }
-::-webkit-scrollbar-thumb { background: #243242; border: 1px solid #2E3E50; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #059669; }
+::-webkit-scrollbar-track { background: var(--brand-void); }
+::-webkit-scrollbar-thumb { background: #243242; border: 1px solid var(--brand-border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--brand-emerald-deep); }
 
-/* Range slider — emerald energy */
-input[type=range] {
-  -webkit-appearance: none;
-  appearance: none;
-  background: #182230;
-  height: 6px;
-  border-radius: 9999px;
-  border: 1px solid #2E3E50;
-  outline: none;
-}
-input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #10B981;
-  cursor: pointer;
-  border: 2px solid #070A0E;
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.8), 0 0 4px #F59E0B;
-  transition: transform 0.15s ease, background-color 0.15s ease;
-}
-input[type=range]::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #10B981;
-  cursor: pointer;
-  border: 2px solid #070A0E;
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.8), 0 0 4px #F59E0B;
-}
-input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); background: #34D399; }
-input[type=range]:focus-visible { outline: 2px solid #10B981; outline-offset: 4px; }
+/* Focus ring */
+*:focus-visible { outline: 2px solid var(--brand-emerald); outline-offset: 2px; }
+
+/* Native <option> elements inherit dark colours */
+select option, select optgroup { background-color: var(--brand-surface); color: var(--brand-text); }
 
 /* Skeleton shimmer */
 @keyframes brandShimmer {
@@ -61,64 +39,200 @@ input[type=range]:focus-visible { outline: 2px solid #10B981; outline-offset: 4p
   100% { background-position: 200% 0; }
 }
 .skeleton-box {
-  background: linear-gradient(90deg, #131B24 25%, #243242 37%, #131B24 63%);
+  background: linear-gradient(90deg, var(--brand-plate) 25%, #243242 37%, var(--brand-plate) 63%);
   background-size: 200% 100%;
   animation: brandShimmer 1.6s infinite ease-in-out;
 }
 
-/* Cuisine chips (rendered by app.js) */
-.cuisine-chip {
+/* ── Form controls ─────────────────────────────────────────────────────── */
+.cuisine-chip, .vibe-chip, .refine-chip, .step-chip {
   display: inline-flex;
   align-items: center;
-  padding: 0.35rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  border-radius: 6px;
-  background-color: #131B24;
-  color: #94A3B8;
-  border: 1px solid #2E3E50;
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.15s ease;
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  border-radius: 0.5rem;
+  border: 1px solid var(--brand-border);
   white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
-.cuisine-chip:hover { background-color: #182230; color: #F1F5F9; border-color: #10B981; }
+.cuisine-chip {
+  padding: 0.35rem 0.7rem;
+  background-color: var(--brand-plate);
+  color: var(--brand-body);
+  cursor: pointer;
+}
+.cuisine-chip:hover { border-color: var(--brand-emerald); color: var(--brand-text); }
 .cuisine-chip.selected {
-  background-color: rgba(5, 150, 105, 0.22);
-  color: #34D399;
-  border-color: #10B981;
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+  background-color: rgba(5, 150, 105, 0.2);
+  color: #6EE7B7;
+  border-color: var(--brand-emerald);
   font-weight: 600;
 }
 
-/* Budget tier cards */
-.budget-card.active {
-  background: linear-gradient(180deg, rgba(6, 78, 59, 0.35) 0%, rgba(13, 19, 26, 0.9) 100%);
-  border-color: #10B981;
-  box-shadow: 0 0 0 1px #10B981, 0 4px 16px rgba(16, 185, 129, 0.2);
+.vibe-chip {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+  background: transparent;
+  color: var(--brand-muted);
+  border-style: dashed;
+  cursor: pointer;
 }
-.budget-card.active .radio-indicator {
-  border-color: #10B981;
-  background-color: #10B981;
-  box-shadow: 0 0 8px #10B981;
+.vibe-chip:hover { color: var(--brand-text); border-color: var(--brand-emerald); }
+
+.refine-chip {
+  padding: 0.4rem 0.8rem;
+  background-color: var(--brand-surface);
+  color: var(--brand-text);
+  cursor: pointer;
 }
-.budget-card.active .radio-indicator-dot { opacity: 1; }
-.budget-card.active .tier-price { color: #34D399; }
-.budget-card:has(input:focus-visible) { outline: 2px solid #10B981; outline-offset: 2px; }
+.refine-chip:hover { border-color: var(--brand-emerald); background-color: #1d2a3b; }
 
-/* Focus ring */
-*:focus-visible { outline: 2px solid #10B981; outline-offset: 2px; }
+.step-chip {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+  background-color: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #FDE68A;
+  white-space: normal;
+}
 
-/* Native <option> elements inherit dark colours */
-select option, select optgroup { background-color: #182230; color: #F1F5F9; }
+.budget-card, .rating-option, .toggle-chip { transition: border-color 0.15s ease, background-color 0.15s ease; }
+.budget-card.active, .rating-option.active, .toggle-chip.active {
+  background-color: rgba(6, 78, 59, 0.45);
+  border-color: var(--brand-emerald);
+}
+.budget-card.active .tier-price { color: #6EE7B7; }
+.rating-option.active { font-weight: 600; }
+.budget-card:has(input:focus-visible),
+.rating-option:has(input:focus-visible),
+.toggle-chip:has(input:focus-visible) { outline: 2px solid var(--brand-emerald); outline-offset: 2px; }
 
-/* Fade-in for result cards */
+/* ── Result cards ──────────────────────────────────────────────────────── */
 @keyframes brandRise {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.rec-card { animation: brandRise 0.35s ease both; }
+.rec-card {
+  background-color: var(--brand-plate);
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-card);
+  padding: 1.25rem;
+  animation: brandRise 0.3s ease both;
+  transition: border-color 0.15s ease;
+}
+.rec-card:hover { border-color: var(--brand-border-strong); }
+.rec-card-top { border: 2px solid var(--brand-gold); }
+.rec-card-top:hover { border-color: var(--brand-gold-light); }
+@media (min-width: 640px) { .rec-card { padding: 1.5rem; } }
+
+.card-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.6rem;
+  background-color: var(--brand-surface);
+  border: 1px solid var(--brand-border);
+  color: var(--brand-muted);
+}
+.card-icon-top { color: var(--brand-gold-light); border-color: rgba(245, 158, 11, 0.5); }
+
+.top-pick-pill {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  vertical-align: middle;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brand-gold-light);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  border-radius: 0.35rem;
+}
+
+.rating-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  padding: 0.2rem 0.55rem;
+  border-radius: 0.5rem;
+  border: 1px solid;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+.rating-high { background: rgba(6, 78, 59, 0.6); border-color: var(--brand-emerald); color: #6EE7B7; }
+.rating-mid  { background: rgba(120, 53, 15, 0.4); border-color: rgba(245, 158, 11, 0.5); color: var(--brand-gold-light); }
+.rating-low  { background: rgba(69, 10, 10, 0.5); border-color: rgba(239, 68, 68, 0.5); color: #FCA5A5; }
+.rating-new  { background: var(--brand-surface); border-color: var(--brand-border-strong); color: var(--brand-emerald); }
+
+.pill {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.75rem;
+  color: var(--brand-body);
+  background: var(--brand-armor);
+  border: 1px solid var(--brand-border);
+  border-radius: 0.4rem;
+}
+.pill-feature { color: #6EE7B7; border-color: rgba(16, 185, 129, 0.35); }
+
+.why-label {
+  display: block;
+  margin-bottom: 0.15rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--brand-gold-light);
+}
+
+.review-quote {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.8125rem;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--brand-muted);
+  background: var(--brand-armor);
+  border-left: 3px solid var(--brand-border-strong);
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--brand-text);
+  background: var(--brand-surface);
+  border: 1px solid var(--brand-border);
+  border-radius: 0.5rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+.action-btn:hover { border-color: var(--brand-emerald); }
+.save-btn.is-saved { color: var(--brand-gold-light); border-color: rgba(245, 158, 11, 0.5); }
+
+.vote-btn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--brand-border);
+  background: var(--brand-surface);
+  cursor: pointer;
+  filter: grayscale(0.6);
+}
+.vote-btn:hover:not(:disabled) { border-color: var(--brand-emerald); filter: none; }
+.vote-btn:disabled { cursor: default; opacity: 0.45; }
+.vote-btn.voted { opacity: 1; filter: none; border-color: var(--brand-emerald); }
 
 @media (prefers-reduced-motion: reduce) {
-  .rec-card, .skeleton-box, .animate-ping, .animate-pulse, .animate-spin { animation: none !important; }
+  .rec-card, .skeleton-box, .animate-ping, .animate-spin { animation: none !important; }
 }

@@ -107,7 +107,7 @@ def build_meta_options(df) -> Dict[str, Any]:
 )
 def get_meta_options(response: Response) -> Dict[str, Any]:
     """Return localities, cuisines, dining types and budget tiers for the UI."""
-    response.headers["Cache-Control"] = "public, max-age=3600"
+    response.headers["Cache-Control"] = "public, max-age=600"
     return build_meta_options(get_dataset())
 
 
@@ -279,7 +279,7 @@ def top_rated(
         )
         for c in dataframe_to_candidates(pool)
     ]
-    response.headers["Cache-Control"] = "public, max-age=3600"
+    response.headers["Cache-Control"] = "public, max-age=600"
     return TopRatedResponse(location=location, restaurants=recs)
 
 

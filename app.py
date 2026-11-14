@@ -104,9 +104,9 @@ app.include_router(router)
 
 FRONTEND_DIR = Path(__file__).resolve().parent / "frontend"
 
-# Only these files are served under /static. The frontend/ folder also holds
-# non-public files (streamlit_app.py, Vercel config), so it is not mounted wholesale.
-PUBLIC_ASSETS = {"app.js", "style.css", "tailwind.css"}
+# Only these files are served under /static (allow-list), so nothing else that
+# lands in frontend/ is published by accident.
+PUBLIC_ASSETS = {"app.js", "style.css", "tailwind.css", "favicon.svg", "og-image.png"}
 
 if FRONTEND_DIR.is_dir():
 
@@ -116,6 +116,11 @@ if FRONTEND_DIR.is_dir():
         if filename not in PUBLIC_ASSETS:
             raise HTTPException(status_code=404, detail="Not Found")
         return FileResponse(FRONTEND_DIR / filename)
+
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon():
+        """Browsers request /favicon.ico by default; serve the SVG icon."""
+        return FileResponse(FRONTEND_DIR / "favicon.svg", media_type="image/svg+xml")
 
     @app.get("/", include_in_schema=False)
     async def serve_index():

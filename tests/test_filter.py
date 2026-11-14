@@ -261,11 +261,12 @@ def test_candidate_retrieval_latency_benchmark(processed_dataset: pd.DataFrame):
     # Warmup
     filter_restaurants(processed_dataset, prefs)
 
-    # Run filter 10 times to compute average latency
+    # Median of 15 runs: robust to one-off spikes when the machine is busy
+    # (the mean failed intermittently when other processes were running).
     latencies = []
-    for _ in range(10):
+    for _ in range(15):
         _, _, _, exec_ms = filter_restaurants(processed_dataset, prefs)
         latencies.append(exec_ms)
 
-    avg_latency = sum(latencies) / len(latencies)
-    assert avg_latency < 50.0, f"Average filter latency {avg_latency:.2f}ms exceeds 50ms budget"
+    median_latency = sorted(latencies)[len(latencies) // 2]
+    assert median_latency < 50.0, f"Median filter latency {median_latency:.2f}ms exceeds 50ms budget"

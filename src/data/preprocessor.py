@@ -112,18 +112,43 @@ def _unique_clean_values(values: pd.Series) -> List[str]:
     return seen
 
 
+def repair_mojibake(val: Any) -> Any:
+    """Undo repeated UTF-8-read-as-Latin-1 corruption, e.g. 'CafÃ\\x83Â©' -> 'Café'.
+
+    Re-decodes until the text stops changing or no longer round-trips; text
+    that was never corrupted is returned unchanged.
+    """
+    if not isinstance(val, str) or not any(m in val for m in ("Ã", "Â", "â€")):
+        return val
+    s = val
+    for _ in range(10):
+        try:
+            fixed = s.encode("latin-1").decode("utf-8")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            break
+        if fixed == s:
+            break
+        s = fixed
+    return s
+
+
 def _yes_no(val: Any) -> bool:
     return _clean_text(val).lower() in ("yes", "true", "1", "y")
 
 
 def clean_phone(val: Any) -> str:
     """Return the first phone number from a field that may hold several."""
-    s = _clean_text(val)
-    if not s:
+    if _is_missing(val):
         return ""
-    # Raw values look like "+91 9108945277\r\n+91 8023456789" (whitespace collapsed above)
-    match = re.search(r"\+?\d[\d\s-]{6,}\d", s)
-    return re.sub(r"\s+", " ", match.group(0)).strip() if match else ""
+    # Raw values look like "080 41265000\r\n080 41264000": split on the line
+    # breaks / separators *before* normalising whitespace, or the numbers merge.
+    for part in re.split(r"[\r\n,/;|]+", str(val)):
+        match = re.search(r"\+?\d[\d -]{5,15}\d", part)
+        if match:
+            number = re.sub(r"\s+", " ", match.group(0)).strip()
+            # "00 91..." is the international prefix written out; use "+91..."
+            return re.sub(r"^00\s?", "+", number)
+    return ""
 
 
 def clean_url(val: Any) -> str:
@@ -311,8 +336,12 @@ def clean_zomato_dataset(raw_df: pd.DataFrame) -> pd.DataFrame:
     df["zones"] = [zones.get(k, []) for k in keys]
     df = df.drop(columns=["norm_name", "norm_loc"])
 
+    # Repair double/triple-encoded UTF-8 ("CafÃ\x83Â©" -> "Café"). Done after
+    # de-duplication so the dedup keys, and therefore restaurant IDs, are unchanged.
+    df["name"] = df["name"].apply(repair_mojibake)
+
     # Enrichment fields (parsed after de-duplication: reviews are expensive)
-    df["address"] = df["address"].apply(_clean_text)
+    df["address"] = df["address"].apply(_clean_text).apply(repair_mojibake)
     df["phone"] = df["raw_phone"].apply(clean_phone)
     df["zomato_url"] = df["raw_url"].apply(clean_url)
     df["rest_type"] = df["rest_type"].apply(_clean_text)

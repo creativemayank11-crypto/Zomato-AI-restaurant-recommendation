@@ -41,6 +41,8 @@ def client():
 def test_clean_phone_takes_first_number():
     assert clean_phone("+91 9108945277\r\n+91 8023456789") == "+91 9108945277"
     assert clean_phone("080 43755274") == "080 43755274"
+    assert clean_phone("080 41265000\r\n080 41264000") == "080 41265000"
+    assert clean_phone("00 919663567711\r\n+91 9916326323") == "+919663567711"
     assert clean_phone(None) == ""
     assert clean_phone("n/a") == ""
 
