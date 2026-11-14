@@ -47,6 +47,32 @@ class UserPreferences(BaseModel):
         le=MAX_RECOMMENDATIONS_COUNT,
         description="Number of recommendations to return (1 to 5)"
     )
+    book_table: bool = Field(
+        default=False,
+        description="Only include restaurants that take table bookings",
+    )
+    online_order: bool = Field(
+        default=False,
+        description="Only include restaurants that take online orders",
+    )
+    dining_type: Optional[str] = Field(
+        default=None,
+        max_length=40,
+        description="Zomato listing category, e.g. 'Buffet', 'Cafes', 'Drinks & nightlife', 'Pubs and bars'",
+        examples=["Pubs and bars"],
+    )
+    strict: bool = Field(
+        default=False,
+        description="Never relax the filters; return no results rather than broaden the search",
+    )
+
+    @field_validator("dining_type", mode="before")
+    @classmethod
+    def clean_dining_type(cls, v):
+        if v is None:
+            return None
+        s = str(v).strip()
+        return s or None
 
     @field_validator("location")
     @classmethod
@@ -80,6 +106,14 @@ class RestaurantCandidate(BaseModel):
     votes: int = Field(default=0, ge=0, description="Total review votes count")
     highlights: Optional[List[str]] = Field(default_factory=list, description="Features or highlights")
     is_new: Optional[bool] = Field(default=False, description="Flag indicating newly opened/unrated")
+    address: str = Field(default="", description="Street address")
+    phone: str = Field(default="", description="Primary phone number")
+    zomato_url: str = Field(default="", description="Zomato restaurant page")
+    rest_type: str = Field(default="", description="Restaurant type, e.g. 'Casual Dining', 'Quick Bites'")
+    online_order: bool = Field(default=False, description="Takes online orders")
+    book_table: bool = Field(default=False, description="Takes table bookings")
+    dining_types: List[str] = Field(default_factory=list, description="Zomato listing categories")
+    review_snippets: List[str] = Field(default_factory=list, description="Short review excerpts")
 
 
 class RestaurantRecommendation(BaseModel):
@@ -90,6 +124,17 @@ class RestaurantRecommendation(BaseModel):
     locality: Optional[str] = Field(default="", description="Locality of the restaurant (from the dataset)")
     rating: Optional[float] = Field(default=0.0, description="Canonical rating score")
     estimated_cost_for_two: Optional[str] = Field(default="", description="Formatted cost string (e.g. '₹1,200 (Medium)')")
+    cost_for_two: Optional[int] = Field(default=None, description="Cost for two in INR (from the dataset)")
+    budget_tier: Optional[str] = Field(default=None, description="'low', 'medium' or 'high'")
+    votes: Optional[int] = Field(default=None, description="Number of rating votes")
+    address: Optional[str] = Field(default="", description="Street address (from the dataset)")
+    phone: Optional[str] = Field(default="", description="Primary phone number (from the dataset)")
+    zomato_url: Optional[str] = Field(default="", description="Zomato restaurant page (from the dataset)")
+    rest_type: Optional[str] = Field(default="", description="Restaurant type (from the dataset)")
+    online_order: Optional[bool] = Field(default=False, description="Takes online orders (from the dataset)")
+    book_table: Optional[bool] = Field(default=False, description="Takes table bookings (from the dataset)")
+    dining_types: Optional[List[str]] = Field(default_factory=list, description="Zomato listing categories")
+    review_snippet: Optional[str] = Field(default="", description="A short real review excerpt (from the dataset)")
     recommendation_reason: str = Field(
         ...,
         max_length=MAX_RATIONALE_LENGTH,
@@ -117,6 +162,14 @@ class RecommendationResponse(BaseModel):
     relaxation_message: Optional[str] = Field(
         default=None,
         description="Explanation of any constraint relaxations applied"
+    )
+    relaxation_steps: List[str] = Field(
+        default_factory=list,
+        description="Each relaxation as a short, user-facing phrase (e.g. 'Rating lowered 4.5 → 4.0')"
+    )
+    ai_generated: bool = Field(
+        default=False,
+        description="True when the reasons were written by the LLM; False for the deterministic fallback"
     )
     recommendations: List[RestaurantRecommendation] = Field(
         default_factory=list,

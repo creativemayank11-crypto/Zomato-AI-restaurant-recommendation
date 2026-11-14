@@ -192,6 +192,85 @@ def count_unique_brands(df_subset: pd.DataFrame) -> int:
     return df_subset["name"].str.lower().str.strip().nunique()
 
 
+def build_feature_mask(
+    df: pd.DataFrame, preferences: UserPreferences
+) -> Tuple[Optional[pd.Series], List[str]]:
+    """Mask for hard feature requirements; (None, []) when none are requested.
+
+    Columns that are absent (e.g. synthetic test data) are ignored.
+    """
+    mask: Optional[pd.Series] = None
+    labels: List[str] = []
+
+    def _and(m: pd.Series) -> None:
+        nonlocal mask
+        mask = m if mask is None else (mask & m)
+
+    if getattr(preferences, "book_table", False) and "book_table" in df.columns:
+        _and(df["book_table"].fillna(False).astype(bool))
+        labels.append("table booking")
+    if getattr(preferences, "online_order", False) and "online_order" in df.columns:
+        _and(df["online_order"].fillna(False).astype(bool))
+        labels.append("online ordering")
+    dining_type = getattr(preferences, "dining_type", None)
+    if dining_type and "dining_types" in df.columns:
+        wanted = dining_type.strip().lower()
+        _and(df["dining_types"].apply(
+            lambda ts: any(str(t).lower() == wanted for t in ts) if _is_listlike(ts) else False
+        ))
+        labels.append(f"'{dining_type}'")
+    return mask, labels
+
+
+def _is_listlike(v) -> bool:
+    return isinstance(v, (list, tuple, set, np.ndarray))
+
+
+def _str_field(v) -> str:
+    if v is None or (isinstance(v, float) and np.isnan(v)):
+        return ""
+    return str(v)
+
+
+def _list_field(v) -> List[str]:
+    return [str(x) for x in v] if _is_listlike(v) else []
+
+
+def build_nearby_mask(df: pd.DataFrame, locality: str) -> Tuple[Optional[pd.Series], List[str]]:
+    """Restaurants listed in the same Zomato zones as restaurants in `locality`.
+
+    Zomato lists each restaurant under the nearby 'zones' (listed_in(city)) it
+    delivers to or is browsable from, so shared zones are a good proxy for
+    'nearby'. Returns (None, []) when the data has no zone information.
+    """
+    if "zones" not in df.columns:
+        return None, []
+    loc_mask = df["locality"].str.lower().str.contains(locality, regex=False, na=False)
+    zones: List[str] = []
+    for zs in df.loc[loc_mask, "zones"]:
+        if _is_listlike(zs):
+            for z in zs:
+                if z not in zones:
+                    zones.append(str(z))
+    if not zones:
+        return None, []
+    zone_set = set(zones)
+    mask = df["zones"].apply(lambda zs: _is_listlike(zs) and not zone_set.isdisjoint(zs))
+    return mask, sorted(zones)
+
+
+def relaxation_steps_from_message(message: Optional[str]) -> List[str]:
+    """Split a relaxation message back into its individual, user-facing steps."""
+    if not message:
+        return []
+    body = message
+    prefix = "Search criteria relaxed:"
+    if body.startswith(prefix):
+        body = body[len(prefix):]
+    body = body.strip().rstrip(".")
+    return [s.strip() for s in body.split(";") if s.strip()]
+
+
 def filter_restaurants(
     df: pd.DataFrame,
     preferences: UserPreferences,
@@ -213,6 +292,19 @@ def filter_restaurants(
     requested_budget = preferences.budget_tier.value
     allowed_budgets = {requested_budget}
     min_rating = preferences.min_rating
+    strict = bool(getattr(preferences, "strict", False))
+    relaxation_reasons: List[str] = []
+
+    # Hard feature requirements (table booking, online ordering, listing category).
+    # They narrow the whole search space before the location/budget/rating cascade.
+    feature_mask, feature_labels = build_feature_mask(df, preferences)
+    if feature_mask is not None:
+        if feature_mask.any() or strict:
+            df = df[feature_mask]
+        else:
+            relaxation_reasons.append(
+                f"No restaurants offer {' + '.join(feature_labels)}, so that requirement was dropped"
+            )
 
     # Attempt 1: Strict Filtering
     mask = build_filter_mask(
@@ -226,11 +318,11 @@ def filter_restaurants(
     )
     candidates_df = df[mask].copy()
 
-    relaxation_applied = False
-    relaxation_reasons = []
+    relaxation_applied = bool(relaxation_reasons)
 
-    # Automated Fallback Relaxation Cascade if candidate unique brands < MIN_CANDIDATES_BEFORE_RELAXATION
-    if count_unique_brands(candidates_df) < MIN_CANDIDATES_BEFORE_RELAXATION:
+    # Automated Fallback Relaxation Cascade if candidate unique brands < MIN_CANDIDATES_BEFORE_RELAXATION.
+    # strict=True disables it: the caller prefers no results over broadened ones.
+    if not strict and count_unique_brands(candidates_df) < MIN_CANDIDATES_BEFORE_RELAXATION:
         relaxation_applied = True
         logger.info(
             "Unique candidates (%d) below threshold (%d). Triggering fallback relaxation cascade...",
@@ -241,13 +333,13 @@ def filter_restaurants(
         # Step 1: Broaden Budget Tier
         if requested_budget == BudgetTier.LOW.value:
             allowed_budgets = {BudgetTier.LOW.value, BudgetTier.MEDIUM.value}
-            relaxation_reasons.append("expanded budget to include medium-tier dining")
+            relaxation_reasons.append("Budget widened to include medium (₹500–₹1,500)")
         elif requested_budget == BudgetTier.HIGH.value:
             allowed_budgets = {BudgetTier.MEDIUM.value, BudgetTier.HIGH.value}
-            relaxation_reasons.append("expanded budget to include medium-tier dining")
+            relaxation_reasons.append("Budget widened to include medium (₹500–₹1,500)")
         else:
             allowed_budgets = {BudgetTier.LOW.value, BudgetTier.MEDIUM.value, BudgetTier.HIGH.value}
-            relaxation_reasons.append("widened budget constraints across all price tiers")
+            relaxation_reasons.append("Budget widened to all price ranges")
 
         mask = build_filter_mask(
             df,
@@ -263,7 +355,7 @@ def filter_restaurants(
         # Step 2: Relax Rating Floor (by 0.5 stars, floor at 3.0)
         if count_unique_brands(candidates_df) < MIN_CANDIDATES_BEFORE_RELAXATION and min_rating > 3.0:
             relaxed_rating = max(min_rating - 0.5, 3.0)
-            relaxation_reasons.append(f"lowered minimum rating threshold from {min_rating} to {relaxed_rating}")
+            relaxation_reasons.append(f"Minimum rating lowered from {min_rating:.1f} to {relaxed_rating:.1f}")
             min_rating = relaxed_rating
 
             mask = build_filter_mask(
@@ -281,7 +373,7 @@ def filter_restaurants(
         if count_unique_brands(candidates_df) < MIN_CANDIDATES_BEFORE_RELAXATION and locality:
             base_loc = re.sub(r"\s*\d+(st|nd|rd|th)?\s+(block|phase|stage|sector).*", "", locality).strip()
             if base_loc and base_loc != locality:
-                relaxation_reasons.append(f"broadened search from '{locality}' to '{base_loc}'")
+                relaxation_reasons.append(f"Searched all of {base_loc.title()} instead of {locality.title()}")
                 locality = base_loc
                 mask = build_filter_mask(
                     df,
@@ -294,10 +386,28 @@ def filter_restaurants(
                 )
                 candidates_df = df[mask].copy()
 
-        # Step 4: Broaden Locality to Parent City / Citywide
+        # Step 4a: Broaden to nearby areas (localities that share Zomato listing zones)
         if count_unique_brands(candidates_df) < MIN_CANDIDATES_BEFORE_RELAXATION and locality:
-            loc_label = preferences.location
-            relaxation_reasons.append(f"broadened search from locality '{loc_label}' to citywide")
+            nearby_mask, nearby_zones = build_nearby_mask(df, locality)
+            if nearby_mask is not None:
+                base = build_filter_mask(
+                    df,
+                    city=city,
+                    locality=None,
+                    target_cuisines=target_cuisines,
+                    allowed_budget_tiers=allowed_budgets,
+                    min_rating=min_rating,
+                    strict_locality=False,
+                )
+                nearby_df = df[base & nearby_mask].copy()
+                if count_unique_brands(nearby_df) > count_unique_brands(candidates_df):
+                    shown = ", ".join(nearby_zones[:3]) + ("…" if len(nearby_zones) > 3 else "")
+                    relaxation_reasons.append(f"Included nearby Zomato areas ({shown})")
+                    candidates_df = nearby_df
+
+        # Step 4b: Broaden Locality to Parent City / Citywide
+        if count_unique_brands(candidates_df) < MIN_CANDIDATES_BEFORE_RELAXATION and locality:
+            relaxation_reasons.append("Searched citywide (all of Bangalore)")
             mask = build_filter_mask(
                 df,
                 city=city,
@@ -311,7 +421,7 @@ def filter_restaurants(
 
         # Step 5: Broaden Cuisines if still insufficient
         if count_unique_brands(candidates_df) < MIN_CANDIDATES_BEFORE_RELAXATION and target_cuisines:
-            relaxation_reasons.append("broadened cuisine filters to include popular dining options")
+            relaxation_reasons.append("Included other cuisines")
             mask = build_filter_mask(
                 df,
                 city=city,
@@ -324,9 +434,9 @@ def filter_restaurants(
             candidates_df = df[mask].copy()
 
     # Step 6: Ultimate Fallback (if still 0 candidates, return top-rated in dataset)
-    if len(candidates_df) == 0:
+    if len(candidates_df) == 0 and not strict and len(df) > 0:
         relaxation_applied = True
-        relaxation_reasons.append("fallback to highest-rated recommendations available")
+        relaxation_reasons.append("Showing the highest-rated restaurants instead")
         candidates_df = df.nlargest(top_k, "rating").copy()
 
     # Calculate Vectorized Heuristic Scores
@@ -351,8 +461,30 @@ def filter_restaurants(
     top_candidates_df = candidates_df.head(top_k)
 
     # Convert to Pydantic RestaurantCandidate domain models
+    candidate_records = dataframe_to_candidates(top_candidates_df)
+
+    exec_time_ms = round((time.perf_counter() - start_time) * 1000, 2)
+    return _finish(candidate_records, relaxation_applied, relaxation_reasons, exec_time_ms)
+
+
+def _finish(candidate_records, relaxation_applied, relaxation_reasons, exec_time_ms):
+    relaxation_message = None
+    if relaxation_applied and relaxation_reasons:
+        relaxation_message = "Search criteria relaxed: " + "; ".join(relaxation_reasons) + "."
+
+    logger.info(
+        "Retrieved %d candidates in %.2fms (relaxation=%s)",
+        len(candidate_records),
+        exec_time_ms,
+        relaxation_applied,
+    )
+    return candidate_records, relaxation_applied, relaxation_message, exec_time_ms
+
+
+def dataframe_to_candidates(rows_df: pd.DataFrame) -> List[RestaurantCandidate]:
+    """Convert dataset rows into RestaurantCandidate models (new columns optional)."""
     candidate_records: List[RestaurantCandidate] = []
-    for _, row in top_candidates_df.iterrows():
+    for _, row in rows_df.iterrows():
         cuisines_raw = row["cuisines"]
         if hasattr(cuisines_raw, "__iter__") and not isinstance(cuisines_raw, str):
             cuisines_list = [str(c).strip().lower() for c in cuisines_raw if str(c).strip()]
@@ -378,20 +510,14 @@ def filter_restaurants(
                 votes=int(row["votes"]),
                 highlights=highlights_list,
                 is_new=bool(row.get("is_new", False)),
+                address=_str_field(row.get("address")),
+                phone=_str_field(row.get("phone")),
+                zomato_url=_str_field(row.get("zomato_url")),
+                rest_type=_str_field(row.get("rest_type")),
+                online_order=bool(row.get("online_order", False)),
+                book_table=bool(row.get("book_table", False)),
+                dining_types=_list_field(row.get("dining_types")),
+                review_snippets=_list_field(row.get("review_snippets")),
             )
         )
-
-    exec_time_ms = round((time.perf_counter() - start_time) * 1000, 2)
-
-    relaxation_message = None
-    if relaxation_applied and relaxation_reasons:
-        relaxation_message = "Search criteria relaxed: " + "; ".join(relaxation_reasons) + "."
-
-    logger.info(
-        "Retrieved %d candidates in %.2fms (relaxation=%s)",
-        len(candidate_records),
-        exec_time_ms,
-        relaxation_applied,
-    )
-
-    return candidate_records, relaxation_applied, relaxation_message, exec_time_ms
+    return candidate_records

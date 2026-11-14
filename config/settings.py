@@ -69,6 +69,15 @@ class Settings(BaseSettings):
     # Max /api/v1/recommend calls per client IP per minute (each call costs an
     # LLM request). 0 disables rate limiting.
     RATE_LIMIT_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "20"))
+
+    # Seconds to cache identical /api/v1/recommend results (0 disables).
+    RECOMMEND_CACHE_TTL_SECONDS: int = int(os.getenv("RECOMMEND_CACHE_TTL_SECONDS", "1800"))
+
+    # Optional shared store (Upstash Redis REST). When unset, cache and rate
+    # limits live in each server instance's memory. Vercel's KV/Upstash
+    # integration names (KV_REST_API_URL / KV_REST_API_TOKEN) are accepted too.
+    UPSTASH_REDIS_REST_URL: str = os.getenv("UPSTASH_REDIS_REST_URL") or os.getenv("KV_REST_API_URL", "")
+    UPSTASH_REDIS_REST_TOKEN: str = os.getenv("UPSTASH_REDIS_REST_TOKEN") or os.getenv("KV_REST_API_TOKEN", "")
     
     # Dataset Storage Paths
     RAW_DATA_PATH: Path = BASE_DIR / os.getenv("RAW_DATA_PATH", "data/raw/zomato_raw.csv")

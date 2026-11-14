@@ -1,4 +1,5 @@
 """Data preprocessing and ETL pipeline for Zomato restaurant data."""
+import ast
 import re
 import logging
 from pathlib import Path
@@ -79,6 +80,107 @@ def extract_series(df: pd.DataFrame, candidates: List[str], default_val: Any = N
     return pd.Series([default_val] * len(df))
 
 
+MAX_REVIEW_SNIPPETS = 2
+MAX_SNIPPET_CHARS = 180
+_MOJIBAKE_MARKERS = ("Ã", "â€", "Â", "ð", "�")
+
+
+def _is_missing(val: Any) -> bool:
+    if val is None:
+        return True
+    try:
+        return bool(pd.isna(val))
+    except (TypeError, ValueError):
+        return False
+
+
+def _clean_text(val: Any) -> str:
+    """Collapse whitespace; return '' for missing values."""
+    if _is_missing(val):
+        return ""
+    s = re.sub(r"\s+", " ", str(val)).strip()
+    return "" if s.lower() == "nan" else s
+
+
+def _unique_clean_values(values: pd.Series) -> List[str]:
+    """Unique, non-empty, order-preserving string values (used in groupby.agg)."""
+    seen: List[str] = []
+    for v in values:
+        s = _clean_text(v)
+        if s and s not in seen:
+            seen.append(s)
+    return seen
+
+
+def _yes_no(val: Any) -> bool:
+    return _clean_text(val).lower() in ("yes", "true", "1", "y")
+
+
+def clean_phone(val: Any) -> str:
+    """Return the first phone number from a field that may hold several."""
+    s = _clean_text(val)
+    if not s:
+        return ""
+    # Raw values look like "+91 9108945277\r\n+91 8023456789" (whitespace collapsed above)
+    match = re.search(r"\+?\d[\d\s-]{6,}\d", s)
+    return re.sub(r"\s+", " ", match.group(0)).strip() if match else ""
+
+
+def clean_url(val: Any) -> str:
+    """Keep only https Zomato restaurant URLs, without the tracking query string."""
+    s = _clean_text(val)
+    if not s.startswith("https://www.zomato.com/"):
+        return ""
+    return s.split("?", 1)[0]
+
+
+def _clean_review_text(text: str) -> str:
+    text = re.sub(r"^\s*RATED\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s+", " ", text).strip()
+    if any(m in text for m in _MOJIBAKE_MARKERS):
+        return ""
+    if len(text) > MAX_SNIPPET_CHARS:
+        cut = text[:MAX_SNIPPET_CHARS].rsplit(" ", 1)[0].rstrip(",.;:!- ")
+        text = cut + "…"
+    return text
+
+
+def extract_review_snippets(val: Any, limit: int = MAX_REVIEW_SNIPPETS) -> List[str]:
+    """Pick up to `limit` short, readable review snippets, preferring 4★+ reviews.
+
+    Raw values are Python-literal strings: "[('Rated 4.0', 'RATED\\n  Great place...'), ...]".
+    """
+    s = "" if _is_missing(val) else str(val)
+    if len(s) < 10:
+        return []
+    try:
+        reviews = ast.literal_eval(s)
+    except (ValueError, SyntaxError, MemoryError, RecursionError):
+        return []
+    if not isinstance(reviews, list):
+        return []
+
+    scored = []
+    for item in reviews:
+        if not (isinstance(item, (list, tuple)) and len(item) == 2):
+            continue
+        rating_match = re.search(r"(\d+(\.\d+)?)", str(item[0]))
+        rating = float(rating_match.group(1)) if rating_match else 0.0
+        text = _clean_review_text(str(item[1]))
+        if len(text) >= 40:
+            scored.append((rating, text))
+
+    # Highest-rated first; stable order otherwise
+    scored.sort(key=lambda x: -x[0])
+    snippets: List[str] = []
+    for _, text in scored:
+        if text not in snippets:
+            snippets.append(text)
+        if len(snippets) >= limit:
+            break
+    return snippets
+
+
 def clean_zomato_dataset(raw_df: pd.DataFrame) -> pd.DataFrame:
     """Execute end-to-end cleaning, normalization, imputation, and feature extraction."""
     logger.info("Starting ETL processing on raw dataset with %d rows", len(raw_df))
@@ -93,6 +195,17 @@ def clean_zomato_dataset(raw_df: pd.DataFrame) -> pd.DataFrame:
     cuisines_series = extract_series(raw_df, ["cuisines", "cuisine"], default_val="Casual Dining")
     highlights_series = extract_series(raw_df, ["dish_liked", "rest_type", "highlights"], default_val="")
 
+    # Enrichment fields (optional — absent in minimal/synthetic inputs)
+    address_series = extract_series(raw_df, ["address"], default_val="")
+    phone_series = extract_series(raw_df, ["phone"], default_val="")
+    url_series = extract_series(raw_df, ["url"], default_val="")
+    rest_type_series = extract_series(raw_df, ["rest_type"], default_val="")
+    online_order_series = extract_series(raw_df, ["online_order"], default_val="")
+    book_table_series = extract_series(raw_df, ["book_table"], default_val="")
+    dining_type_series = extract_series(raw_df, ["listed_in(type)"], default_val="")
+    zone_series = extract_series(raw_df, ["listed_in(city)"], default_val="")
+    reviews_series = extract_series(raw_df, ["reviews_list"], default_val="")
+
     df = pd.DataFrame({
         "name": names,
         "locality": localities,
@@ -102,6 +215,15 @@ def clean_zomato_dataset(raw_df: pd.DataFrame) -> pd.DataFrame:
         "votes": votes_series,
         "cuisines": cuisines_series,
         "raw_highlights": highlights_series,
+        "address": address_series.values,
+        "raw_phone": phone_series.values,
+        "raw_url": url_series.values,
+        "rest_type": rest_type_series.values,
+        "raw_online_order": online_order_series.values,
+        "raw_book_table": book_table_series.values,
+        "raw_dining_type": dining_type_series.values,
+        "raw_zone": zone_series.values,
+        "raw_reviews": reviews_series.values,
     })
 
     # Drop entries with missing restaurant names
@@ -173,10 +295,30 @@ def clean_zomato_dataset(raw_df: pd.DataFrame) -> pd.DataFrame:
 
     df["highlights"] = df["raw_highlights"].apply(parse_highlights)
 
-    # Deduplicate by normalized name and locality
+    # The raw data repeats a restaurant once per listing (zone x dining type).
+    # Collect those listings before de-duplicating so no information is lost.
     df["norm_name"] = df["name"].str.lower()
     df["norm_loc"] = df["locality"].str.lower()
-    df = df.drop_duplicates(subset=["norm_name", "norm_loc"]).drop(columns=["norm_name", "norm_loc"])
+    grouped = df.groupby(["norm_name", "norm_loc"], sort=False)
+    dining_types = grouped["raw_dining_type"].agg(_unique_clean_values)
+    zones = grouped["raw_zone"].agg(_unique_clean_values)
+
+    # Deduplicate by normalized name and locality (first occurrence wins, so
+    # restaurant IDs stay stable across ETL runs)
+    df = df.drop_duplicates(subset=["norm_name", "norm_loc"])
+    keys = list(zip(df["norm_name"], df["norm_loc"]))
+    df["dining_types"] = [dining_types.get(k, []) for k in keys]
+    df["zones"] = [zones.get(k, []) for k in keys]
+    df = df.drop(columns=["norm_name", "norm_loc"])
+
+    # Enrichment fields (parsed after de-duplication: reviews are expensive)
+    df["address"] = df["address"].apply(_clean_text)
+    df["phone"] = df["raw_phone"].apply(clean_phone)
+    df["zomato_url"] = df["raw_url"].apply(clean_url)
+    df["rest_type"] = df["rest_type"].apply(_clean_text)
+    df["online_order"] = df["raw_online_order"].apply(_yes_no)
+    df["book_table"] = df["raw_book_table"].apply(_yes_no)
+    df["review_snippets"] = df["raw_reviews"].apply(extract_review_snippets)
 
     # Generate canonical restaurant_id (e.g. ZOM_00001)
     df = df.reset_index(drop=True)
@@ -195,6 +337,15 @@ def clean_zomato_dataset(raw_df: pd.DataFrame) -> pd.DataFrame:
         "votes",
         "highlights",
         "is_new",
+        "address",
+        "phone",
+        "zomato_url",
+        "rest_type",
+        "online_order",
+        "book_table",
+        "dining_types",
+        "zones",
+        "review_snippets",
     ]
     result_df = df[canonical_cols]
     logger.info("ETL complete. Cleaned dataset has %d unique records", len(result_df))

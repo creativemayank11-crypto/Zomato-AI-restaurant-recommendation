@@ -4,9 +4,10 @@ Each call to /api/v1/recommend costs a Groq request, so a public deployment
 needs a basic guard against a single client burning through API credits.
 
 Design notes:
-- Sliding 60-second window per client, stored in process memory. This is
-  enough for a single Railway instance; with several replicas each replica
-  enforces its own limit (use Redis or similar if you scale out).
+- Default: sliding 60-second window per client in process memory. On
+  serverless (Vercel) each instance keeps its own window.
+- With a shared store configured (Upstash Redis, see src/api/store.py) a
+  fixed 60-second window is kept in Redis, so the limit holds across instances.
 - The client is identified by the first address in X-Forwarded-For (set by
   Vercel and Railway's proxies), falling back to the socket peer address.
   X-Forwarded-For can be forged by a client that calls the backend directly,
@@ -19,9 +20,14 @@ import time
 from collections import defaultdict, deque
 from typing import Deque, Dict, Optional
 
+import logging
+
 from fastapi import HTTPException, Request
 
 from config.settings import settings
+from src.api.store import MemoryStore, StoreError, get_store
+
+logger = logging.getLogger(__name__)
 
 WINDOW_SECONDS = 60.0
 
@@ -86,9 +92,35 @@ def client_identifier(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
+def _check_shared_store(client: str, limit: int) -> Optional[int]:
+    """Fixed-window limit in the shared store; shared by every server instance."""
+    store = get_store()
+    key = f"rl:recommend:{client}"
+    count = store.incr_window(key, int(WINDOW_SECONDS))
+    if count > limit:
+        return max(1, store.ttl(key) or int(WINDOW_SECONDS))
+    return None
+
+
 def enforce_recommend_rate_limit(request: Request) -> None:
-    """FastAPI dependency: raise 429 when a client exceeds RATE_LIMIT_PER_MINUTE."""
-    retry_after = recommend_limiter.check(client_identifier(request), settings.RATE_LIMIT_PER_MINUTE)
+    """FastAPI dependency: raise 429 when a client exceeds RATE_LIMIT_PER_MINUTE.
+
+    Uses the shared store (Upstash) when configured, so the limit holds across
+    serverless instances; otherwise an in-memory sliding window per instance.
+    """
+    limit = settings.RATE_LIMIT_PER_MINUTE
+    if limit <= 0:
+        return
+    client = client_identifier(request)
+    retry_after: Optional[int]
+    if isinstance(get_store(), MemoryStore):
+        retry_after = recommend_limiter.check(client, limit)
+    else:
+        try:
+            retry_after = _check_shared_store(client, limit)
+        except StoreError as exc:
+            logger.warning("Shared rate-limit store unavailable (%s); using in-memory limit.", exc)
+            retry_after = recommend_limiter.check(client, limit)
     if retry_after is not None:
         raise HTTPException(
             status_code=429,

@@ -1,6 +1,8 @@
 """FastAPI application: middleware, lifespan events, and router mounting."""
 import logging
+import re
 import time
+import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
@@ -67,16 +69,26 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Request-ID", "X-Response-Time", "X-Cache", "Retry-After"],
 )
 
 
+_REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9._:-]{6,80}$")
+
+
 @app.middleware("http")
-async def add_response_time_header(request: Request, call_next) -> Response:
-    """Attach X-Response-Time header (milliseconds) to every response."""
+async def add_request_metadata(request: Request, call_next) -> Response:
+    """Assign a request ID (reusing a sane incoming X-Request-ID / Vercel ID) and
+    attach X-Request-ID and X-Response-Time (ms) headers to every response."""
+    incoming = request.headers.get("x-request-id") or request.headers.get("x-vercel-id") or ""
+    request_id = incoming if _REQUEST_ID_RE.match(incoming) else uuid.uuid4().hex[:16]
+    request.state.request_id = request_id
+
     t_start = time.perf_counter()
     response: Response = await call_next(request)
     elapsed_ms = round((time.perf_counter() - t_start) * 1000, 1)
     response.headers["X-Response-Time"] = f"{elapsed_ms}ms"
+    response.headers["X-Request-ID"] = request_id
     return response
 
 

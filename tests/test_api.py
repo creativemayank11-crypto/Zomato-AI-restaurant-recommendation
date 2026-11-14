@@ -264,7 +264,9 @@ class TestRecommendEndpoint:
             data = response.json()
             assert "detail" in data
             assert data["detail"]["error"] == "recommendation_pipeline_error"
-            assert "Groq service unreachable" in data["detail"]["message"]
+            # Internal error text is not leaked; a request ID is returned for log lookup
+            assert "Groq service unreachable" not in data["detail"]["message"]
+            assert data["detail"]["request_id"] == response.headers["X-Request-ID"]
 
     @pytest.mark.skipif(not settings.GROQ_API_KEY, reason="Live GROQ_API_KEY not configured")
     def test_recommend_live_groq_endpoint(self, client):

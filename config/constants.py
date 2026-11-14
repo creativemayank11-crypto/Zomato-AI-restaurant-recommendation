@@ -21,6 +21,8 @@ VOTE_NORMALIZATION_CAP: int = 1000
 
 # Number of candidates sent to the cognitive LLM reasoning layer
 DEFAULT_TOP_K_CANDIDATES: int = 12
+# How many of the shortlist the LLM sees (prompt-token budget vs. choice)
+LLM_PROMPT_CANDIDATES: int = 8
 MIN_CANDIDATES_BEFORE_RELAXATION: int = 3
 DEFAULT_RECOMMENDATIONS_COUNT: int = 3
 MAX_RECOMMENDATIONS_COUNT: int = 5

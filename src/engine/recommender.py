@@ -8,13 +8,15 @@ from tenacity import (
     retry,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
+    retry_if_exception,
 )
+from pydantic import ValidationError
 
 from config.constants import (
     DEFAULT_RECOMMENDATIONS_COUNT,
     MAX_RECOMMENDATIONS_COUNT,
     MAX_RATIONALE_LENGTH,
+    LLM_PROMPT_CANDIDATES,
 )
 from config.settings import settings
 from src.models.schema import (
@@ -27,9 +29,37 @@ from src.prompts.templates import (
     SYSTEM_PROMPT,
     build_user_prompt,
 )
-from src.engine.filter import filter_restaurants
+from src.engine.filter import filter_restaurants, relaxation_steps_from_message
 
 logger = logging.getLogger(__name__)
+
+
+def build_grounded_recommendation(candidate: RestaurantCandidate, reason: str) -> RestaurantRecommendation:
+    """Build a recommendation whose factual fields all come from the dataset record.
+
+    Only `reason` may come from the LLM; everything else is copied from the
+    canonical candidate so the model cannot alter names, ratings, prices or links.
+    """
+    return RestaurantRecommendation(
+        restaurant_id=candidate.restaurant_id,
+        restaurant_name=candidate.name,
+        cuisine=", ".join(candidate.cuisines),
+        locality=candidate.locality,
+        rating=candidate.rating,
+        estimated_cost_for_two=f"₹{candidate.cost_for_two:,} ({candidate.budget_tier.value.capitalize()})",
+        cost_for_two=candidate.cost_for_two,
+        budget_tier=candidate.budget_tier.value,
+        votes=candidate.votes,
+        address=candidate.address,
+        phone=candidate.phone,
+        zomato_url=candidate.zomato_url,
+        rest_type=candidate.rest_type,
+        online_order=candidate.online_order,
+        book_table=candidate.book_table,
+        dining_types=list(candidate.dining_types),
+        review_snippet=candidate.review_snippets[0] if candidate.review_snippets else "",
+        recommendation_reason=reason[:MAX_RATIONALE_LENGTH],
+    )
 
 
 def validate_grounding(
@@ -86,16 +116,7 @@ def validate_grounding(
         if not reason:
             reason = f"Top-rated {', '.join(candidate.cuisines[:2])} dining in {candidate.locality} matching your preferences."
 
-        clean_rec = RestaurantRecommendation(
-            restaurant_id=candidate.restaurant_id,
-            restaurant_name=candidate.name,
-            cuisine=", ".join(candidate.cuisines),
-            locality=candidate.locality,
-            rating=candidate.rating,
-            estimated_cost_for_two=f"₹{candidate.cost_for_two:,} ({candidate.budget_tier.value.capitalize()})",
-            recommendation_reason=reason[:MAX_RATIONALE_LENGTH],
-        )
-        verified.append(clean_rec)
+        verified.append(build_grounded_recommendation(candidate, reason))
 
     # If verification left fewer than target count, backfill from remaining top candidates
     max_needed = min(len(candidates), target_count)
@@ -109,17 +130,7 @@ def validate_grounding(
                     f"serving {', '.join(c.cuisines[:2])}{features_str}."
                 )[:MAX_RATIONALE_LENGTH]
 
-                verified.append(
-                    RestaurantRecommendation(
-                        restaurant_id=c.restaurant_id,
-                        restaurant_name=c.name,
-                        cuisine=", ".join(c.cuisines),
-                        locality=c.locality,
-                        rating=c.rating,
-                        estimated_cost_for_two=f"₹{c.cost_for_two:,} ({c.budget_tier.value.capitalize()})",
-                        recommendation_reason=fallback_reason,
-                    )
-                )
+                verified.append(build_grounded_recommendation(c, fallback_reason))
                 if len(verified) >= max_needed:
                     break
 
@@ -150,6 +161,8 @@ def generate_deterministic_recommendations(
         total_candidates_analyzed=len(candidates),
         relaxation_applied=relaxation_applied,
         relaxation_message=relaxation_message,
+        relaxation_steps=relaxation_steps_from_message(relaxation_message),
+        ai_generated=False,
         recommendations=verified,
     )
 
@@ -311,10 +324,22 @@ def call_groq(
 
 
 
+def is_transient_llm_error(exc: BaseException) -> bool:
+    """Retry only failures a second attempt can fix: malformed model output.
+
+    The provider SDKs (groq, openai) already retry rate limits (429), timeouts,
+    connection errors and 5xx themselves, honouring Retry-After. Retrying those
+    again here would multiply attempts (up to 9 calls) and blow serverless time
+    limits. Auth errors, bad requests and unsupported providers never succeed
+    on retry, so they fall through to the deterministic fallback at once.
+    """
+    return isinstance(exc, (json.JSONDecodeError, ValidationError))
+
+
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=1, max=6),
-    retry=retry_if_exception_type((Exception,)),
+    retry=retry_if_exception(is_transient_llm_error),
     reraise=True,
 )
 def invoke_llm_with_retry(
@@ -388,6 +413,7 @@ def generate_recommendations(
             total_candidates_analyzed=0,
             relaxation_applied=relaxation_applied,
             relaxation_message=relaxation_message,
+            relaxation_steps=relaxation_steps_from_message(relaxation_message),
             recommendations=[],
         )
 
@@ -418,9 +444,10 @@ def generate_recommendations(
 
     # Build prompts with token-pruned candidate subset
     target_count = min(len(candidates), preferences.max_recommendations)
-    # Token Optimization: Provide only top (target_count + 1) candidates to LLM prompt.
-    # Drastically cuts prompt tokens by ~65-70% while leaving anti-hallucination ground truth intact.
-    prompt_candidates = candidates[: min(len(candidates), target_count + 1)]
+    # The LLM sees the top LLM_PROMPT_CANDIDATES of the shortlist so it can pick
+    # on vibe, not just heuristic score. Larger pools cost prompt tokens, which
+    # hits Groq's tokens-per-minute limit (free tier) sooner — 8 is the balance.
+    prompt_candidates = candidates[:LLM_PROMPT_CANDIDATES]
     system_prompt = SYSTEM_PROMPT.format(requested_count=target_count)
     user_prompt = build_user_prompt(preferences, prompt_candidates, relaxation_message=relaxation_message)
 
@@ -439,11 +466,22 @@ def generate_recommendations(
             target_count=target_count,
         )
 
+        # The response counts as AI-generated if at least one of the model's own
+        # picks survived grounding (the rest may be deterministic backfill).
+        llm_ids = {r.restaurant_id for r in raw_response.recommendations}
+        llm_names = {r.restaurant_name.strip().lower() for r in raw_response.recommendations}
+        ai_generated = any(
+            v.restaurant_id in llm_ids or v.restaurant_name.strip().lower() in llm_names
+            for v in verified_recs
+        )
+
         return RecommendationResponse(
             query_summary=raw_response.query_summary,
-            total_candidates_analyzed=len(candidates),
+            total_candidates_analyzed=len(prompt_candidates),
             relaxation_applied=relaxation_applied,
             relaxation_message=relaxation_message,
+            relaxation_steps=relaxation_steps_from_message(relaxation_message),
+            ai_generated=ai_generated,
             recommendations=verified_recs,
         )
 
