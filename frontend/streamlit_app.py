@@ -3,8 +3,18 @@
 Run with:
     streamlit run frontend/streamlit_app.py
 """
+import html
+import sys
 import time
+from pathlib import Path
+
 import streamlit as st
+
+# Streamlit puts this script's folder (frontend/) on sys.path, not the project
+# root, so `src` and `config` would not be importable without this.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 # Configure page settings
 st.set_page_config(
@@ -85,8 +95,8 @@ def main():
         st.error(f"Failed to load dataset: {e}")
         return
 
-    # Top localities & cuisines for dropdowns
-    top_localities = df["locality"].value_counts().head(50).index.tolist()
+    # All localities present in dataset & top cuisines for dropdowns
+    top_localities = sorted([str(loc) for loc in df["locality"].dropna().unique().tolist() if str(loc).strip()])
     from collections import Counter
     cuisine_counts = Counter(c for row in df["cuisines"] for c in row)
     top_cuisines = [c.title() for c, _ in cuisine_counts.most_common(30)]
@@ -127,12 +137,19 @@ def main():
     # Sidebar preferences
     with st.sidebar:
         st.header("Dining Preferences")
+        location_options = ["All Bangalore (Citywide)"] + top_localities
         default_loc = preset["location"] if preset else "Indiranagar"
-        loc_index = top_localities.index(default_loc) if default_loc in top_localities else 0
-        location = st.selectbox("📍 Locality", top_localities, index=loc_index)
+        loc_index = location_options.index(default_loc) if default_loc in location_options else (location_options.index("Indiranagar") if "Indiranagar" in location_options else 0)
+        selected_loc = st.selectbox("📍 Locality", location_options, index=loc_index)
+        location = "Bangalore" if selected_loc == "All Bangalore (Citywide)" else selected_loc
 
-        default_cuisines = preset["cuisines"] if preset else ["Italian"]
-        cuisines = st.multiselect("🍲 Cuisines", top_cuisines, default=default_cuisines)
+        default_cuisines = preset["cuisines"] if preset else []
+        cuisines = st.multiselect(
+            "🍲 Cuisines (Optional)",
+            top_cuisines,
+            default=default_cuisines,
+            help="Optional. Leave empty to search across all cuisines without restriction.",
+        )
 
         budget_options = ["low", "medium", "high"]
         budget_labels = {"low": "Low (< ₹500)", "medium": "Medium (₹500–₹1500)", "high": "High (> ₹1500)"}
@@ -148,24 +165,22 @@ def main():
         min_rating = st.slider("⭐ Minimum Rating", 1.0, 5.0, default_rating, 0.1)
 
         default_notes = preset["notes"] if preset else "Cozy candlelit dinner, romantic outdoor ambience with authentic Italian pasta"
-        user_notes = st.text_area("✨ Vibe & Occasion Notes", default_notes, height=90, max_chars=500)
+        user_notes = st.text_area("✨ Vibe & Occasion Notes", default_notes, height=90, max_chars=300)
 
-        max_recs = st.slider("Number of Recommendations", 3, 8, 5)
+        max_recs = st.slider("Number of Recommendations", 1, 5, 5)
         search_clicked = st.button("✨ Get Recommendations", type="primary", use_container_width=True)
 
     # Trigger recommendation when search button is clicked or preset chosen
     if search_clicked or preset is not None:
-        if not cuisines:
-            st.warning("Please select at least one cuisine.")
-            return
-
         from src.models.schema import UserPreferences, BudgetTier
         from src.engine.filter import filter_restaurants
         from src.engine.recommender import generate_recommendations
 
+        selected_cuisines = cuisines if cuisines else ["all"]
+
         prefs = UserPreferences(
             location=location,
-            cuisines=cuisines,
+            cuisines=selected_cuisines,
             budget_tier=BudgetTier(budget_tier),
             min_rating=min_rating,
             max_recommendations=max_recs,
@@ -203,15 +218,15 @@ def main():
                 st.markdown(f"""
                 <div class="rec-card">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div class="card-title">#{idx} {rec.restaurant_name}</div>
+                        <div class="card-title">#{idx} {html.escape(str(rec.restaurant_name or ""))}</div>
                         <span class="badge-rating">⭐ {rec.rating:.1f}</span>
                     </div>
                     <div class="meta-row">
-                        🍲 <strong>{rec.cuisine}</strong> &nbsp;•&nbsp; 💳 {rec.estimated_cost_for_two} &nbsp;•&nbsp; <code>{rec.restaurant_id}</code>
+                        🍲 <strong>{html.escape(str(rec.cuisine or ""))}</strong> &nbsp;•&nbsp; 💳 {html.escape(str(rec.estimated_cost_for_two or ""))} &nbsp;•&nbsp; <code>{html.escape(str(rec.restaurant_id or ""))}</code>
                     </div>
                     <div class="ai-rationale-box">
                         <div class="ai-tag">✨ AI Concierge Rationale</div>
-                        <div style="font-size: 0.95rem; color: #e2e8f0; margin-top: 0.25rem;">{rec.recommendation_reason}</div>
+                        <div style="font-size: 0.95rem; color: #e2e8f0; margin-top: 0.25rem;">{html.escape(str(rec.recommendation_reason or ""))}</div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)

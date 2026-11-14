@@ -37,7 +37,9 @@ class Settings(BaseSettings):
 
     # Groq Configuration (Primary LLM provider — sub-second inference via LPU)
     GROQ_API_KEY: Optional[str] = os.getenv("GROQ_API_KEY", "")
-    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
+    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+    GROQ_REASONING_FORMAT: str = os.getenv("GROQ_REASONING_FORMAT", "hidden")
+    GROQ_REASONING_EFFORT: str = os.getenv("GROQ_REASONING_EFFORT", "low")
 
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY", "")
     GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
@@ -59,6 +61,10 @@ class Settings(BaseSettings):
     API_HOST: str = os.getenv("API_HOST", "0.0.0.0")
     API_PORT: int = int(os.getenv("API_PORT", "8000"))
     DEBUG: bool = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
+
+    # Comma-separated list of allowed browser origins for CORS,
+    # e.g. "https://my-app.vercel.app". Defaults to "*" for local development.
+    ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "*")
     
     # Dataset Storage Paths
     RAW_DATA_PATH: Path = BASE_DIR / os.getenv("RAW_DATA_PATH", "data/raw/zomato_raw.csv")

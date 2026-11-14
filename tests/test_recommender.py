@@ -4,6 +4,7 @@ import pytest
 import pandas as pd
 
 from config.constants import BudgetTier, MAX_RATIONALE_LENGTH
+from config.settings import settings
 from src.data.preprocessor import load_processed_data
 from src.models.schema import (
     UserPreferences,
@@ -18,7 +19,10 @@ from src.prompts.templates import (
     build_user_prompt,
 )
 from src.engine.recommender import (
+    call_gemini,
+    call_openai,
     call_groq,
+    extract_json_payload,
     validate_grounding,
     generate_deterministic_recommendations,
     generate_recommendations,
@@ -476,3 +480,158 @@ def test_end_to_end_recommend_pipeline():
         assert rec.rating >= 4.0
         assert "italian" in rec.cuisine.lower()
         assert len(rec.recommendation_reason) <= MAX_RATIONALE_LENGTH
+
+
+# ==============================================================================
+# 5. Advanced Edge Cases & Provider Verification Tests
+# ==============================================================================
+
+def test_extract_json_payload_fenced_and_nested():
+    """Verify robust extraction of JSON inside markdown fences with nested objects and comments."""
+    raw = """Here is the response:
+```json
+{
+  "query_summary": "Romantic dinner in Bangalore",
+  "total_candidates_analyzed": 2,
+  "relaxation_applied": false,
+  "recommendations": [
+    {
+      "restaurant_id": "ZOM_101",
+      "restaurant_name": "Toscano",
+      "cuisine": "Italian",
+      "rating": 4.5,
+      "estimated_cost_for_two": "₹1,200 (Medium)",
+      "recommendation_reason": "Cozy ambiance with authentic wood-fired pizzas."
+    }
+  ]
+}
+```
+Let me know if you need more recommendations!"""
+    extracted = extract_json_payload(raw)
+    parsed = RecommendationResponse.model_validate_json(extracted)
+    assert parsed.query_summary == "Romantic dinner in Bangalore"
+    assert len(parsed.recommendations) == 1
+    assert parsed.recommendations[0].restaurant_id == "ZOM_101"
+
+
+def test_extract_json_payload_edge_cases():
+    """Verify handling of None, empty strings, and plain raw JSON."""
+    assert extract_json_payload(None) == "{}"
+    assert extract_json_payload("") == "{}"
+    assert extract_json_payload("   ") == "{}"
+
+    plain_json = '{"query_summary": "Quick bite", "recommendations": []}'
+    assert extract_json_payload(plain_json) == plain_json
+
+    text_surrounding = 'Some preface text {"query_summary": "Test", "recommendations": []} trailing note'
+    assert extract_json_payload(text_surrounding) == '{"query_summary": "Test", "recommendations": []}'
+
+
+def test_validate_grounding_empty_rationale_fallback(sample_candidates):
+    """Verify that an empty or whitespace rationale from LLM receives a canonical fallback reason."""
+    raw_recs = [
+        RestaurantRecommendation(
+            restaurant_id="ZOM_101",
+            restaurant_name="Toscano Italian Bistro",
+            cuisine="Italian",
+            rating=4.5,
+            estimated_cost_for_two="₹1,200",
+            recommendation_reason="   ",  # Blank rationale from LLM
+        )
+    ]
+
+    verified = validate_grounding(raw_recs, sample_candidates, target_count=1)
+    assert len(verified) == 1
+    v = verified[0]
+    assert v.recommendation_reason.strip() != ""
+    assert "Toscano" in sample_candidates[0].name
+    assert "Indiranagar" in v.recommendation_reason or "italian" in v.recommendation_reason.lower()
+
+
+def test_validate_grounding_single_candidate_underflow(sample_candidates):
+    """Verify EC-07: Candidate pool of 1 returns exactly 1 result without hallucinating extras."""
+    single_candidate = [sample_candidates[0]]
+
+    # User requested 3 recommendations, but only 1 candidate exists
+    verified = validate_grounding([], single_candidate, target_count=3)
+    assert len(verified) == 1
+    assert verified[0].restaurant_id == "ZOM_101"
+
+
+def test_call_gemini_mocked():
+    """Verify call_gemini correctly interacts with the Google GenAI client."""
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.parsed = RecommendationResponse(
+        query_summary="Gemini summary",
+        total_candidates_analyzed=1,
+        recommendations=[],
+    )
+    mock_client.models.generate_content.return_value = mock_response
+
+    resp = call_gemini(
+        system_prompt="System",
+        user_prompt="User",
+        api_key="fake-gemini-key",
+        model_name="gemini-2.0-flash",
+        custom_client=mock_client,
+    )
+    assert isinstance(resp, RecommendationResponse)
+    assert resp.query_summary == "Gemini summary"
+    mock_client.models.generate_content.assert_called_once()
+
+
+def test_call_openai_mocked():
+    """Verify call_openai correctly interacts with the OpenAI client."""
+    mock_client = MagicMock()
+    mock_completion = MagicMock()
+    mock_message = MagicMock()
+    mock_message.parsed = RecommendationResponse(
+        query_summary="OpenAI summary",
+        total_candidates_analyzed=1,
+        recommendations=[],
+    )
+    mock_completion.choices = [MagicMock(message=mock_message)]
+    mock_client.beta.chat.completions.parse.return_value = mock_completion
+
+    resp = call_openai(
+        system_prompt="System",
+        user_prompt="User",
+        api_key="fake-openai-key",
+        model_name="gpt-4o-mini",
+        custom_client=mock_client,
+    )
+    assert isinstance(resp, RecommendationResponse)
+    assert resp.query_summary == "OpenAI summary"
+    mock_client.beta.chat.completions.parse.assert_called_once()
+
+
+@pytest.mark.skipif(not settings.GROQ_API_KEY, reason="Live GROQ_API_KEY not configured")
+def test_live_groq_recommendation_flow(sample_candidates):
+    """Integration test with live Groq LLM checking schema conformity, grounding, and rationale quality."""
+    prefs = UserPreferences(
+        location="Bangalore",
+        cuisines=["Italian"],
+        budget_tier="medium",
+        min_rating=4.0,
+        additional_notes="romantic anniversary dinner, quiet table",
+        max_recommendations=2,
+    )
+
+    response = generate_recommendations(
+        preferences=prefs,
+        candidates=sample_candidates,
+        provider="groq",
+    )
+
+    assert isinstance(response, RecommendationResponse)
+    assert len(response.recommendations) == 2
+    assert response.query_summary.strip() != ""
+
+    candidate_ids = {c.restaurant_id for c in sample_candidates}
+    for rec in response.recommendations:
+        # Zero-hallucination guarantee: must match source candidate ID
+        assert rec.restaurant_id in candidate_ids
+        assert len(rec.recommendation_reason) <= MAX_RATIONALE_LENGTH
+        assert len(rec.recommendation_reason) > 10
+

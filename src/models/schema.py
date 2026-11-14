@@ -86,14 +86,24 @@ class RestaurantRecommendation(BaseModel):
     """An individual restaurant recommendation with AI-generated reasoning."""
     restaurant_id: str = Field(..., description="Canonical ID matching source candidate")
     restaurant_name: str = Field(..., description="Restaurant name")
-    cuisine: str = Field(..., description="Primary cuisines")
-    rating: float = Field(..., description="Canonical rating score")
-    estimated_cost_for_two: str = Field(..., description="Formatted cost string (e.g. '₹1,200 (Medium)')")
+    cuisine: Optional[str] = Field(default="", description="Primary cuisines")
+    locality: Optional[str] = Field(default="", description="Locality of the restaurant (from the dataset)")
+    rating: Optional[float] = Field(default=0.0, description="Canonical rating score")
+    estimated_cost_for_two: Optional[str] = Field(default="", description="Formatted cost string (e.g. '₹1,200 (Medium)')")
     recommendation_reason: str = Field(
         ...,
         max_length=MAX_RATIONALE_LENGTH,
         description="Grounded explanation linking user context and restaurant attributes"
     )
+
+    @field_validator("recommendation_reason", mode="before")
+    @classmethod
+    def truncate_reason(cls, v):
+        # Truncate instead of rejecting: a slightly long LLM rationale must not
+        # invalidate the whole LLM response and force a deterministic fallback.
+        if isinstance(v, str) and len(v) > MAX_RATIONALE_LENGTH:
+            return v[: MAX_RATIONALE_LENGTH - 1].rstrip() + "…"
+        return v
 
 
 class RecommendationResponse(BaseModel):

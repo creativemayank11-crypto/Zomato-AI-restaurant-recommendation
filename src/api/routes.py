@@ -64,9 +64,9 @@ def get_meta_options() -> Dict[str, Any]:
     """Return available localities, top cuisines, and budget tiers for frontend dropdowns."""
     df = get_dataset()
 
-    # Unique localities sorted by restaurant count
-    top_localities: List[str] = (
-        df["locality"].value_counts().head(50).index.tolist()
+    # All unique localities present in dataset, sorted alphabetically
+    all_localities: List[str] = sorted(
+        [str(loc) for loc in df["locality"].dropna().unique().tolist() if str(loc).strip()]
     )
 
     # Flatten cuisine lists and count occurrences
@@ -83,7 +83,7 @@ def get_meta_options() -> Dict[str, Any]:
     ]
 
     return {
-        "localities": top_localities,
+        "localities": all_localities,
         "cuisines": top_cuisines,
         "budget_tiers": budget_tiers,
         "rating_range": {"min": 1.0, "max": 5.0, "step": 0.5},

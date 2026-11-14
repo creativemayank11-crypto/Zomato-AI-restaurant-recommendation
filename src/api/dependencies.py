@@ -52,9 +52,10 @@ def init_llm_client_singleton() -> tuple[Optional[Any], str]:
     _llm_provider = provider
 
     if provider == "groq":
-        if settings.GROQ_API_KEY:
+        groq_key = (settings.GROQ_API_KEY or "").strip()
+        if groq_key:
             from groq import Groq
-            _llm_client = Groq(api_key=settings.GROQ_API_KEY)
+            _llm_client = Groq(api_key=groq_key)
             logger.info("Groq client initialised (model: %s)", settings.GROQ_MODEL)
         else:
             _llm_client = None
@@ -85,7 +86,8 @@ def init_llm_client_singleton() -> tuple[Optional[Any], str]:
 
 
 def release_dataset_singleton() -> None:
-    """Release the dataset singleton on application shutdown."""
-    global _dataset
+    """Release the dataset and LLM client singletons on application shutdown."""
+    global _dataset, _llm_client
     _dataset = None
-    logger.info("Dataset singleton released.")
+    _llm_client = None
+    logger.info("Dataset and LLM client singletons released.")

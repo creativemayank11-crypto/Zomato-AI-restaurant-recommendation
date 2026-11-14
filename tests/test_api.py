@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
+from config.settings import settings
 from app import app
 from src.models.schema import (
     BudgetTier,
@@ -264,4 +265,25 @@ class TestRecommendEndpoint:
             assert "detail" in data
             assert data["detail"]["error"] == "recommendation_pipeline_error"
             assert "Groq service unreachable" in data["detail"]["message"]
+
+    @pytest.mark.skipif(not settings.GROQ_API_KEY, reason="Live GROQ_API_KEY not configured")
+    def test_recommend_live_groq_endpoint(self, client):
+        """Integration test for /api/v1/recommend endpoint hitting live Groq LPU API."""
+        payload = {
+            "location": "Bangalore",
+            "cuisines": ["Italian"],
+            "budget_tier": "medium",
+            "min_rating": 4.0,
+            "additional_notes": "romantic anniversary dinner, quiet table",
+            "max_recommendations": 2,
+        }
+        response = client.post("/api/v1/recommend", json=payload)
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["recommendations"]) == 2
+        assert "X-Response-Time" in response.headers
+        for rec in data["recommendations"]:
+            assert rec["restaurant_id"]
+            assert len(rec["recommendation_reason"]) > 10
+
 

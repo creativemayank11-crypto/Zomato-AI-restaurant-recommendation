@@ -2,6 +2,9 @@
 import sys
 import httpx
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 BASE_URL = "http://127.0.0.1:8000"
 
 print("=" * 60)
@@ -34,8 +37,28 @@ try:
     print(f"    Top Localities: {len(meta_data.get('localities', []))} available")
     print(f"    Top Cuisines:   {len(meta_data.get('cuisines', []))} available")
 
+    # 4. Test Recommendation Flow
+    payload = {
+        "location": "Indiranagar",
+        "cuisines": ["Italian"],
+        "budget_tier": "medium",
+        "min_rating": 4.0,
+        "max_recommendations": 2,
+        "additional_notes": "romantic anniversary dinner",
+    }
+    r_rec = httpx.post(f"{BASE_URL}/api/v1/recommend", json=payload, timeout=15.0)
+    rec_data = r_rec.json()
+    print(f"\n[4] Recommendation Pipeline (/api/v1/recommend):")
+    print(f"    Status:         {r_rec.status_code} {'OK' if r_rec.status_code == 200 else 'FAIL'}")
+    print(f"    Response Time:  {r_rec.headers.get('x-response-time', 'N/A')}")
+    print(f"    Recommendations: {len(rec_data.get('recommendations', []))} items returned")
+    if rec_data.get('recommendations'):
+        first = rec_data['recommendations'][0]
+        print(f"    Top Pick:       {first.get('restaurant_name')} ({first.get('rating')}★)")
+        print(f"    AI Rationale:   {first.get('recommendation_reason')}")
+
     print("\n" + "=" * 60)
-    print("SUCCESS: Both Backend and Frontend are fully operational!")
+    print("SUCCESS: Full Backend, Frontend, and AI Pipeline are operational!")
     print(f"Open in your browser: {BASE_URL}")
     print("=" * 60)
 

@@ -1,0 +1,19 @@
+# Local development: runtime deps + alternative LLM providers, ETL, Streamlit and tests.
+-r requirements.txt
+
+# Alternative LLM providers (gemini / openai)
+openai>=1.12.0
+google-genai>=0.1.0
+google-generativeai>=0.5.0
+
+# Data ingestion (scripts/run_etl.py)
+datasets>=2.18.0
+duckdb>=0.9.0
+
+# Alternative Streamlit UI (frontend/streamlit_app.py)
+streamlit>=1.32.0
+
+# Testing & Quality
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+httpx>=0.27.0

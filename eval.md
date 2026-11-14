@@ -42,12 +42,12 @@ graph TD
 | **Phase 0** | Project Scaffolding & Config | ✅ Complete | `tests/test_phase0_setup.py` — 9 passed |
 | **Phase 1** | ETL & Parquet Pipeline | ✅ Complete | `tests/test_data_pipeline.py` — 7 passed |
 | **Phase 2** | Deterministic Retrieval Engine | ✅ Complete | `tests/test_filter.py` — 12 passed |
-| **Phase 3** | Cognitive LLM Recommender | ✅ Complete | `tests/test_recommender.py` — 12 passed |
-| **Phase 4** | FastAPI REST Service | ⏳ Pending | — |
-| **Phase 5** | Streamlit/Web UI | ⏳ Pending | — |
+| **Phase 3** | Cognitive LLM Recommender | ✅ Complete | `tests/test_recommender.py` — 21 passed |
+| **Phase 4** | FastAPI REST Service | ✅ Complete | `tests/test_api.py` — 23 passed |
+| **Phase 5** | Streamlit/Web UI | ✅ Complete | `tests/test_persona_validation.py` — 7 passed |
 | **Phase 6** | QA, Benchmarking & Docs | ⏳ Pending | — |
 
-**Current aggregate: 40 / 40 tests passing (`pytest -v` · 2026-10-24)**
+**Current aggregate: 79 / 79 tests passing (`pytest -v`)**
 
 ---
 

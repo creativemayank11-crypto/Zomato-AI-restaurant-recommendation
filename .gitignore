@@ -34,6 +34,7 @@ ENV/
 data/raw/*.csv
 data/raw/*.json
 data/processed/*.parquet
+!data/processed/zomato_clean.parquet
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 
