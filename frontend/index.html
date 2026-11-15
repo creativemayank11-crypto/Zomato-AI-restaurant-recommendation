@@ -118,11 +118,14 @@
                 <span>Area</span>
                 <span class="text-xs font-normal text-[#94A3B8]" id="locality-count"></span>
               </label>
-              <input id="location-input" list="locality-list" autocomplete="off" spellcheck="false"
-                     class="w-full bg-[#1C1C22] text-[#F1F5F9] text-sm rounded-xl border border-[#3A3A44] hover:border-[#55555F] focus:border-[#EF4444] focus:outline-none px-3.5 py-2.5 placeholder-[#64748B]"
-                     placeholder="Type an area, e.g. Indiranagar" value="Indiranagar" aria-describedby="location-hint" />
-              <datalist id="locality-list"></datalist>
-              <p id="location-hint" class="mt-1 text-xs text-[#94A3B8]">Start typing to search, or choose "All Bangalore".</p>
+              <div class="relative">
+                <select id="location-input" aria-describedby="location-hint"
+                        class="w-full appearance-none cursor-pointer bg-[#1C1C22] text-[#F1F5F9] text-sm rounded-xl border border-[#3A3A44] hover:border-[#55555F] focus:border-[#EF4444] focus:outline-none pl-3.5 pr-10 py-2.5">
+                  <option value="Indiranagar" selected>Indiranagar</option>
+                </select>
+                <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#FBBF24]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              </div>
+              <p id="location-hint" class="mt-1 text-xs text-[#94A3B8]">Every Bangalore area in the dataset, A–Z. Tip: type the first letters to jump.</p>
             </div>
 
             <!-- Cuisines -->

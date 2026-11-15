@@ -147,6 +147,9 @@ def test_options_include_new_fields_and_cache_header(client):
     assert "Delivery" not in data["dining_types"]
     assert len(data["all_cuisines"]) > len(data["cuisines"])
     assert data["rating_options"] == [0.0, 3.5, 4.0, 4.5]
+    # Areas are listed A–Z ignoring case, for the Area dropdown
+    assert data["localities"] == sorted(data["localities"], key=str.lower)
+    assert len(data["localities"]) >= 90
 
 
 def test_request_id_header_generated_and_propagated(client):

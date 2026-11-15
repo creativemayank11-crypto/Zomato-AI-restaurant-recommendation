@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const $ = (id) => document.getElementById(id);
   const el = {
     statusText: $('status-text'), statusDot: $('status-dot'), statusPing: $('status-ping'), modelBadge: $('model-badge'),
-    location: $('location-input'), localityList: $('locality-list'), localityCount: $('locality-count'),
+    location: $('location-input'), localityCount: $('locality-count'),
     cuisineSearch: $('cuisine-search'), cuisineChips: $('cuisine-chips'), cuisineCount: $('selected-cuisines-count'),
     resetChips: $('reset-chips-btn'), notes: $('user-notes'), charCount: $('char-count'), vibeExamples: $('vibe-examples'),
     count: $('max-recs-select'), bookTable: $('book-table'), onlineOrder: $('online-order'), diningType: $('dining-type'),
@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function applyState(s) {
-    el.location.value = locationLabel(s.location || DEFAULTS.location);
+    setLocation(s.location || DEFAULTS.location);
     selectedCuisines = new Set(s.cuisines || []);
     renderCuisineChips();
     setRadio('budget_tier', BUDGETS.includes(s.budget) ? s.budget : DEFAULTS.budget, '.budget-card');
@@ -236,10 +236,39 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {
       allCuisines = FALLBACK_CUISINES;
     }
-    el.localityList.innerHTML = [CITYWIDE_LABEL, ...localities]
-      .map((l) => `<option value="${escapeHtml(l)}"></option>`).join('');
+    populateAreaDropdown();
     el.localityCount.textContent = localities.length ? `${localities.length} areas` : '';
     renderCuisineChips();
+  }
+
+  /** Fill the Area dropdown: "All Bangalore" first, then every area A–Z. */
+  function populateAreaDropdown() {
+    const current = el.location.value || DEFAULTS.location;
+    const areas = localities.length ? localities : [DEFAULTS.location];
+    el.location.innerHTML = '';
+
+    const city = document.createElement('option');
+    city.value = CITYWIDE_VALUE;
+    city.textContent = `${CITYWIDE_LABEL} (citywide)`;
+    el.location.appendChild(city);
+
+    const group = document.createElement('optgroup');
+    group.label = `Areas (${areas.length})`;
+    areas.forEach((area) => {
+      const opt = document.createElement('option');
+      opt.value = area;
+      opt.textContent = area;
+      group.appendChild(opt);
+    });
+    el.location.appendChild(group);
+    setLocation(current);
+  }
+
+  /** Select the dropdown option matching a location (falls back to the default area). */
+  function setLocation(value) {
+    const resolved = resolveLocation(value) || DEFAULTS.location;
+    const exists = [...el.location.options].some((o) => o.value === resolved);
+    el.location.value = exists ? resolved : DEFAULTS.location;
   }
 
   // ── 2. Cuisine chips with search ──────────────────────────────────────────
@@ -321,13 +350,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Empty-state "Top rated in …" follows the chosen area
-  let topRatedTimer = null;
-  el.location.addEventListener('input', () => {
-    clearTimeout(topRatedTimer);
-    topRatedTimer = setTimeout(() => {
-      const loc = resolveLocation(el.location.value);
-      if (loc) loadTopRated(loc);
-    }, 400);
+  el.location.addEventListener('change', () => {
+    const loc = resolveLocation(el.location.value);
+    if (loc && !states.empty.classList.contains('hidden')) loadTopRated(loc);
   });
 
   // ── 4. Presets ────────────────────────────────────────────────────────────

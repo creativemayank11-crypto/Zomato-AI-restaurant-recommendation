@@ -71,7 +71,8 @@ def build_meta_options(df) -> Dict[str, Any]:
         return cached
 
     localities: List[str] = sorted(
-        str(loc) for loc in df["locality"].dropna().unique().tolist() if str(loc).strip()
+        (str(loc) for loc in df["locality"].dropna().unique().tolist() if str(loc).strip()),
+        key=str.lower,  # A–Z regardless of case ("Banashankari" before "BTM")
     )
     cuisine_counts: Counter = Counter(c for row in df["cuisines"] for c in row)
     ranked_cuisines = [c.title() for c, _ in cuisine_counts.most_common()]
