@@ -19,6 +19,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const RATINGS = ['1.0', '3.5', '4.0', '4.5'];
   const FALLBACK_CUISINES = ['North Indian', 'Chinese', 'South Indian', 'Italian', 'Continental', 'Fast Food',
     'Cafe', 'Biryani', 'Desserts', 'Street Food', 'Asian', 'Bakery'];
+  // Regional groups for the cuisine dropdown (names as they appear in the data).
+  // Only cuisines actually present in /api/v1/meta/options are shown.
+  const REGIONAL_CUISINES = {
+    'North Indian': ['North Indian', 'Mughlai', 'Rajasthani', 'Kashmiri', 'Lucknowi', 'Awadhi', 'Bihari'],
+    'South Indian': ['South Indian', 'Andhra', 'Kerala', 'Mangalorean', 'Hyderabadi', 'Chettinad', 'Tamil'],
+  };
   const VIBE_EXAMPLES = ['Quiet place to talk', 'Rooftop with a view', 'Live music', 'Great for groups',
     'Kid-friendly', 'Quick lunch'];
   const STORAGE = { saved: 'sac:saved', recent: 'sac:recent' };
@@ -38,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const el = {
     statusText: $('status-text'), statusDot: $('status-dot'), statusPing: $('status-ping'), modelBadge: $('model-badge'),
     location: $('location-input'), localityCount: $('locality-count'),
-    cuisineSearch: $('cuisine-search'), cuisineChips: $('cuisine-chips'), cuisineCount: $('selected-cuisines-count'),
+    regionalCuisine: $('regional-cuisine'), cuisineSearch: $('cuisine-search'), cuisineChips: $('cuisine-chips'), cuisineCount: $('selected-cuisines-count'),
     resetChips: $('reset-chips-btn'), notes: $('user-notes'), charCount: $('char-count'), vibeExamples: $('vibe-examples'),
     count: $('max-recs-select'), bookTable: $('book-table'), onlineOrder: $('online-order'), diningType: $('dining-type'),
     form: $('recommendation-form'), reset: $('reset-btn'),
@@ -299,6 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
       el.cuisineChips.insertAdjacentHTML('beforeend', '<span class="text-xs text-[#64748B] p-1">No cuisine matches that search.</span>');
     }
     el.cuisineCount.textContent = selectedCuisines.size ? `${selectedCuisines.size} selected` : 'Any cuisine';
+    renderRegionalDropdown();
   }
 
   function toggleCuisine(c) {
@@ -338,6 +345,41 @@ document.addEventListener('DOMContentLoaded', () => {
   [el.bookTable, el.onlineOrder].forEach((cb) => cb.addEventListener('change', syncToggleChips));
   el.notes.addEventListener('input', updateCharCount);
   el.cuisineSearch.addEventListener('input', renderCuisineChips);
+
+  /** North / South Indian dropdown: picking a cuisine adds it to the selection. */
+  function renderRegionalDropdown() {
+    const available = new Set(allCuisines.length ? allCuisines : FALLBACK_CUISINES);
+    const placeholder = el.regionalCuisine.options[0];
+    el.regionalCuisine.innerHTML = '';
+    el.regionalCuisine.appendChild(placeholder);
+    Object.entries(REGIONAL_CUISINES).forEach(([region, names]) => {
+      const present = names.filter((n) => available.has(n));
+      if (!present.length) return;
+      const group = document.createElement('optgroup');
+      group.label = `${region} cuisines`;
+      present.forEach((name) => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = selectedCuisines.has(name) ? `✓ ${name} (selected)` : name;
+        group.appendChild(opt);
+      });
+      el.regionalCuisine.appendChild(group);
+    });
+    el.regionalCuisine.value = '';
+  }
+
+  el.regionalCuisine.addEventListener('change', () => {
+    const name = el.regionalCuisine.value;
+    if (!name) return;
+    if (selectedCuisines.has(name)) {
+      toast(`${name} is already selected`);
+    } else {
+      selectedCuisines.add(name);
+      toast(`Added ${name}`);
+    }
+    el.cuisineSearch.value = '';
+    renderCuisineChips();
+  });
   el.resetChips.addEventListener('click', clearCuisines);
 
   VIBE_EXAMPLES.forEach((text) => {

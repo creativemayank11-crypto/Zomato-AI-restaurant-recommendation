@@ -134,6 +134,14 @@
                 <span class="text-sm font-semibold text-[#E2E8F0]" id="cuisine-label">Cuisines <span class="font-normal text-[#94A3B8]">(optional)</span></span>
                 <span class="text-xs text-[#EF4444]" id="selected-cuisines-count">Any cuisine</span>
               </div>
+              <label class="sr-only" for="regional-cuisine">Add a North or South Indian cuisine</label>
+              <div class="relative mb-2">
+                <select id="regional-cuisine"
+                        class="w-full appearance-none cursor-pointer bg-[#1C1C22] text-[#F1F5F9] text-sm rounded-lg border border-[#3A3A44] hover:border-[#55555F] focus:border-[#EF4444] focus:outline-none pl-3 pr-10 py-2">
+                  <option value="">Add a North / South Indian cuisine…</option>
+                </select>
+                <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#FBBF24]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              </div>
               <input id="cuisine-search" type="search" autocomplete="off" placeholder="Search cuisines…"
                      class="w-full mb-2 bg-[#0E0E11] text-[#F1F5F9] text-sm rounded-lg border border-[#3A3A44] focus:border-[#EF4444] focus:outline-none px-3 py-2 placeholder-[#64748B]" aria-label="Search cuisines" />
               <div class="flex flex-wrap gap-1.5 max-h-[132px] overflow-y-auto p-2 bg-[#0E0E11] rounded-xl border border-[#3A3A44]" id="cuisine-chips" role="group" aria-labelledby="cuisine-label">
