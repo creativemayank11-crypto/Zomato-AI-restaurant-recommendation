@@ -420,11 +420,29 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── 5. Reset ──────────────────────────────────────────────────────────────
-  el.reset.addEventListener('click', () => {
+  function resetAll() {
     applyState(DEFAULTS);
     lastState = null;
-    history.pushState(null, '', location.pathname);
+    el.cuisineSearch.value = '';
+    renderCuisineChips();
+    if (location.search) history.pushState(null, '', location.pathname);
     showEmpty();
+  }
+  el.reset.addEventListener('click', resetAll);
+
+  // The emblem / title in the header doubles as a reset (no page reload).
+  // Ctrl/Cmd/Shift/middle-click still follow the link normally (e.g. new tab).
+  $('home-reset').addEventListener('click', (e) => {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    if (inFlight) return;
+    resetAll();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const emblem = e.currentTarget.querySelector('.emblem');
+    emblem.classList.remove('emblem-spin');
+    void emblem.offsetWidth; // restart the animation on repeated clicks
+    emblem.classList.add('emblem-spin');
+    toast('Filters reset');
   });
 
   // ── 6. Search ─────────────────────────────────────────────────────────────

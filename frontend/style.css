@@ -244,7 +244,7 @@ select option, select optgroup { background-color: var(--brand-surface); color: 
 .vote-btn.voted { opacity: 1; filter: none; border-color: var(--brand-red); }
 
 @media (prefers-reduced-motion: reduce) {
-  .rec-card, .skeleton-box, .animate-ping, .animate-spin { animation: none !important; }
+  .rec-card, .skeleton-box, .animate-ping, .animate-spin, .emblem-spin { animation: none !important; }
 }
 
 /* ── Armoured HUD layer ────────────────────────────────────────────────── */
@@ -311,6 +311,17 @@ body {
   border: 2px solid var(--brand-gold);
   box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.55), 0 0 18px rgba(103, 232, 249, 0.35);
 }
+
+/* Header emblem doubles as a reset button */
+.home-reset { cursor: pointer; border-radius: 0.75rem; }
+.home-reset:hover .emblem {
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.8), 0 0 26px rgba(103, 232, 249, 0.6);
+}
+@keyframes emblemSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.emblem-spin { animation: emblemSpin 0.6s ease-out; }
 
 /* Primary action: red plating with a gold edge */
 .btn-primary {
